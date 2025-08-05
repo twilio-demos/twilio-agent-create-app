@@ -1,19 +1,41 @@
 {
-  "name": "twilio-agent-create-app",
+  "name": "create-twilio-agent",
   "version": "1.0.0",
+  "description": "Create a new Twilio agent with a single command",
   "main": "index.js",
+  "bin": {
+    "create-twilio-agent": "./index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "twilio",
+    "agent",
+    "create",
+    "cli",
+    "generator",
+    "voice",
+    "conversational-ai"
+  ],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
     "fs-extra": "^11.3.0",
     "inquirer": "^8.2.6",
     "ora": "^5.4.1"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/create-twilio-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/create-twilio-agent/issues"
+  },
+  "homepage": "https://github.com/yourusername/create-twilio-agent#readme"
 }

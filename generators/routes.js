@@ -143,8 +143,8 @@ router.get('/call', async (req, res) => {
   } catch (error) {
     console.error('❌ Critical error during language configuration:', error);
     console.error('📍 Error details:', {
-      message: error.message,
-      stack: error.stack?.split('\\n').slice(0, 3).join('\\n')
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : undefined
     });
 
     // Fallback to English-only configuration

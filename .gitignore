@@ -11,3 +11,7 @@ dist
 
 **/.DS_Store
 test-agent
+
+# Test directories
+test-*
+test-npx-project/
