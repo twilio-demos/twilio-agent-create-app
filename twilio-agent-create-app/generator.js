@@ -91,6 +91,7 @@ async function generatePackageJson(projectPath, config) {
       "twilio": "^4.19.0",
       "express": "^4.18.2",
       "express-ws": "^5.0.2",
+      "ws": "^8.14.2",
       "dotenv": "^16.3.1",
       "axios": "^1.5.0",
       "openai": "^4.20.0",
@@ -104,6 +105,7 @@ async function generatePackageJson(projectPath, config) {
       "@types/node": "^20.5.0",
       "@types/express": "^4.17.17",
       "@types/express-ws": "^3.0.1",
+      "@types/ws": "^8.5.7",
       "@types/cors": "^2.8.14",
       "@types/morgan": "^1.9.5",
       "@types/compression": "^1.7.3",
@@ -1491,13 +1493,14 @@ export default router;
 
   // Generate conversationRelay.ts
   const conversationRelayTemplate = `import ExpressWs from 'express-ws';
+import WebSocket from 'ws';
 import { LLMService } from '../llm';
 import { getLocalTemplateData } from '../lib/utils/llm/getTemplateData';
 import { log } from '../lib/utils/logger';
 
 // Store active conversations
 const activeConversations = new Map<string, {
-  ws: ExpressWs.WebsocketRequestHandler;
+  ws: WebSocket;
   llm: LLMService | null;
   ttl: number;
 }>();
@@ -1549,7 +1552,7 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
     
     // Store the connection
     activeConversations.set(phoneNumber, {
-      ws: ws as any,
+      ws,
       llm,
       ttl: Date.now() + (30 * 60 * 1000) // 30 minutes TTL
     });
