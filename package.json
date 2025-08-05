@@ -1,6 +1,6 @@
 {
   "name": "create-twilio-agent",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Create a new Twilio agent with a single command",
   "main": "index.js",
   "bin": {
@@ -32,10 +32,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/create-twilio-agent.git"
+    "url": "https://github.com/twilio-demos/create-twilio-agent.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/create-twilio-agent/issues"
+    "url": "https://github.com/twilio-demos/create-twilio-agent/issues"
   },
-  "homepage": "https://github.com/yourusername/create-twilio-agent#readme"
+  "homepage": "https://github.com/twilio-demos/create-twilio-agent#readme"
 }
