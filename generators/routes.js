@@ -142,10 +142,6 @@ router.get('/call', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Critical error during language configuration:', error);
-    console.error('📍 Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : undefined
-    });
 
     // Fallback to English-only configuration
     console.log('🔄 Implementing fallback: English-only configuration...');
@@ -170,7 +166,7 @@ router.get('/call', async (req, res) => {
 
   // Send response
   res.type('text/xml');
-  res.send(twimlString);
+  res.send(twilioTwiml.toString());
   
   console.log('📤 TwiML response sent successfully');
 });

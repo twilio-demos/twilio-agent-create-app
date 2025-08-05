@@ -5,7 +5,8 @@ async function generateTsConfig(projectPath) {
   const tsConfig = {
     compilerOptions: {
       target: "ES2020",
-      lib: ["ES2020"],
+      lib: ["ES2020", "DOM"],
+      types: ["node"],
       module: "commonjs",
       outDir: "./dist",
       rootDir: "./src",

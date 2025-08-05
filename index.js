@@ -64,17 +64,17 @@ async function getProjectConfig(projectName, options) {
         name: 'toolCalls',
         message: 'Which voice agent tools would you like to include?',
         choices: [
-          { name: 'Send Text Message', value: 'sendText', checked: true },
-          { name: 'Send RCS Message', value: 'sendRCS', checked: true },
+          { name: 'Send Text Message', value: 'sendText' },
+          { name: 'Send RCS Message', value: 'sendRCS' },
           { name: 'Send Email', value: 'sendEmail' },
-          { name: 'Get Customer Profile', value: 'getSegmentProfile', checked: true },
+          { name: 'Get Customer Profile', value: 'getSegmentProfile' },
           { name: 'Get Customer Events', value: 'getSegmentEvents' },
           { name: 'Update Customer Profile', value: 'updateSegmentProfile' },
           { name: 'Track Customer Event', value: 'postSegmentTrack' },
           { name: 'Get Customer Data', value: 'getAirtableData' },
           { name: 'Update Customer Data', value: 'upsertAirtableData' },
-          { name: 'Send to Live Agent', value: 'sendToLiveAgent', checked: true },
-          { name: 'Switch Language', value: 'switchLanguage', checked: true }
+          { name: 'Send to Live Agent', value: 'sendToLiveAgent' },
+          { name: 'Switch Language', value: 'switchLanguage' }
         ]
       }
     ]);
