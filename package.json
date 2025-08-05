@@ -1,6 +1,6 @@
 {
   "name": "create-twilio-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create a new Twilio agent with a single command",
   "main": "index.js",
   "bin": {
