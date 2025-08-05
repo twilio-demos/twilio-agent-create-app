@@ -30,7 +30,9 @@ async function generatePackageJson(projectPath, config) {
       "helmet": "^7.1.0",
       "morgan": "^1.10.0",
       "compression": "^1.7.4",
-      "winston": "^3.10.0"
+      "winston": "^3.10.0",
+      "@sendgrid/mail": "^8.1.0",
+      "airtable": "^0.12.2"
     },
     devDependencies: {
       "@types/node": "^20.5.0",

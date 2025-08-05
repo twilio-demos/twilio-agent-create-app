@@ -153,19 +153,35 @@ export class LLMService {
 
     // Add instructions from local file
     if (this.templateData?.instructions) {
+      console.log('📝 Adding instructions to LLM memory:');
+      console.log('- Instructions length:', this.templateData.instructions.length, 'characters');
+      console.log('- Instructions preview:', this.templateData.instructions.substring(0, 200) + '...');
+      
       this.addMessage({
         role: 'system',
         content: this.templateData.instructions,
       });
+    } else {
+      console.log('❌ No instructions found in templateData');
     }
 
     // Add context from local file
     if (this.templateData?.context) {
+      console.log('📋 Adding context to LLM memory:');
+      console.log('- Context length:', this.templateData.context.length, 'characters');
+      console.log('- Context preview:', this.templateData.context.substring(0, 200) + '...');
+      
       this.addMessage({
         role: 'system',
         content: this.templateData.context,
       });
+    } else {
+      console.log('❌ No context found in templateData');
     }
+
+    console.log('🧠 LLM memory summary:');
+    console.log('- Total messages in memory:', this.store.msgs.length);
+    console.log('- System messages:', this.store.msgs.filter(m => m.role === 'system').length);
   }
 
   // Event emitter methods

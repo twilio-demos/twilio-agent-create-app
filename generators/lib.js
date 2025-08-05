@@ -182,15 +182,22 @@ import path from 'path';
 import { LocalTemplateData } from '../../types';
 
 export async function getLocalTemplateData(): Promise<LocalTemplateData> {
-  const rootDir = path.resolve(__dirname, '../../../');
+  // Look in the src directory, not the dist directory
+  const rootDir = path.resolve(__dirname, '../../../../');
   
   let instructions = '';
   let context = '';
   
   try {
     const instructionsPath = path.join(rootDir, 'src/lib/prompts/instructions.md');
+    console.log('Looking for instructions at:', instructionsPath);
     if (await fs.pathExists(instructionsPath)) {
       instructions = await fs.readFile(instructionsPath, 'utf-8');
+      console.log('✅ Successfully loaded instructions.md');
+      console.log('Instructions content length:', instructions.length, 'characters');
+      console.log('Instructions preview:', instructions.substring(0, 200) + '...');
+    } else {
+      console.log('❌ instructions.md not found at:', instructionsPath);
     }
   } catch (error) {
     console.warn('Could not read instructions.md:', error);
@@ -198,14 +205,20 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
   
   try {
     const contextPath = path.join(rootDir, 'src/lib/prompts/context.md');
+    console.log('Looking for context at:', contextPath);
     if (await fs.pathExists(contextPath)) {
       context = await fs.readFile(contextPath, 'utf-8');
+      console.log('✅ Successfully loaded context.md');
+      console.log('Context content length:', context.length, 'characters');
+      console.log('Context preview:', context.substring(0, 200) + '...');
+    } else {
+      console.log('❌ context.md not found at:', contextPath);
     }
   } catch (error) {
     console.warn('Could not read context.md:', error);
   }
   
-  return {
+  const result = {
     instructions,
     context,
     webhookUrl: process.env.WEBHOOK_URL,
@@ -222,6 +235,14 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
       emailFromAddress: process.env.EMAIL_FROM_ADDRESS,
     },
   };
+
+  console.log('📋 Final template data summary:');
+  console.log('- Instructions loaded:', instructions.length > 0 ? 'YES' : 'NO');
+  console.log('- Context loaded:', context.length > 0 ? 'YES' : 'NO');
+  console.log('- Instructions length:', instructions.length, 'characters');
+  console.log('- Context length:', context.length, 'characters');
+
+  return result;
 }
 `;
 

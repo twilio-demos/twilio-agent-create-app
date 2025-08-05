@@ -1,84 +1,95 @@
 const fs = require('fs-extra');
 const path = require('path');
-const ora = require('ora');
 const chalk = require('chalk');
+const ora = require('ora');
 
 // Import modular generators
-const { generatePackageJson } = require('./generators/package.json.js');
-const { generateTsConfig, generateProcfile } = require('./generators/config.js');
-const { generateAppFile, generateLlmFile, generateVoicesFile } = require('./generators/core.js');
-const { generateLibStructure } = require('./generators/lib.js');
-const { generateTools } = require('./generators/tools.js');
-const { generateRoutes } = require('./generators/routes.js');
-const { generateEnvTemplate } = require('./generators/env.js');
-const { generateReadme, generateGitignore } = require('./generators/docs.js');
-const { initializeGit, installDependencies } = require('./generators/utils.js');
+const { generateAppFile, generateLlmFile, generateVoicesFile } = require('./generators/core');
+const { generateLibStructure } = require('./generators/lib');
+const { generateRoutes } = require('./generators/routes');
+const { generateTools } = require('./generators/tools');
+const { generateReadme, generateGitignore } = require('./generators/docs');
+const { generateTsConfig, generateProcfile } = require('./generators/config');
+const { generatePackageJson } = require('./generators/package.json');
+const { generateEnvTemplate } = require('./generators/env');
 
 async function generateProject(config) {
-  const spinner = ora('Creating your Twilio agent...').start();
+  const projectPath = path.resolve(config.projectName);
+  
+  // Create project directory
+  await fs.ensureDir(projectPath);
+  
+  const spinner = ora('Creating Twilio agent project...').start();
   
   try {
-    const projectPath = path.resolve(config.projectName);
-    
-    // Create project directory
-    await fs.ensureDir(projectPath);
-    
-    // Generate package.json with TypeScript setup
-    await generatePackageJson(projectPath, config);
-    
-    // Generate TypeScript configuration
-    await generateTsConfig(projectPath);
-    
-    // Generate Procfile
-    await generateProcfile(projectPath);
-    
-    // Generate main app.ts file
+    // Generate core files
+    spinner.text = 'Generating core files...';
     await generateAppFile(projectPath, config);
-    
-    // Generate LLM service file
     await generateLlmFile(projectPath, config);
-    
-    // Generate lib directory structure
-    await generateLibStructure(projectPath, config);
-    
-    // Generate tool files
-    await generateTools(projectPath, config);
-    
-    // Generate routes directory
-    await generateRoutes(projectPath, config);
-    
-    // Generate voices.ts
     await generateVoicesFile(projectPath);
     
-    // Generate environment template
-    await generateEnvTemplate(projectPath);
+    // Generate lib files
+    spinner.text = 'Generating library files...';
+    await generateLibStructure(projectPath, config);
     
-    // Generate README
+    // Generate routes
+    spinner.text = 'Generating routes...';
+    await generateRoutes(projectPath, config);
+    
+    // Generate tools
+    spinner.text = 'Generating tools...';
+    await generateTools(projectPath, config);
+    
+
+    
+    // Generate docs
+    spinner.text = 'Generating documentation...';
     await generateReadme(projectPath, config);
-    
-    // Generate .gitignore
     await generateGitignore(projectPath);
+    
+    // Generate config files
+    spinner.text = 'Generating configuration files...';
+    await generateTsConfig(projectPath);
+    await generateProcfile(projectPath);
+    
+    // Generate package.json
+    spinner.text = 'Generating package.json...';
+    await generatePackageJson(projectPath, config);
+    
+    // Generate .env.example
+    spinner.text = 'Generating environment template...';
+    await generateEnvTemplate(projectPath, config);
     
     // Initialize git if requested
     if (config.git) {
-      await initializeGit(projectPath);
+      spinner.text = 'Initializing git repository...';
+      const { execSync } = require('child_process');
+      try {
+        execSync('git init', { cwd: projectPath, stdio: 'ignore' });
+        execSync('git add .', { cwd: projectPath, stdio: 'ignore' });
+        execSync('git commit -m "Initial commit"', { cwd: projectPath, stdio: 'ignore' });
+      } catch (error) {
+        console.warn(chalk.yellow('Warning: Could not initialize git repository'));
+      }
     }
     
-    // Install dependencies
-    await installDependencies(projectPath, config);
-    
-    spinner.succeed(chalk.green('Twilio agent created successfully!'));
+    spinner.succeed(chalk.green('Project created successfully!'));
     
     console.log('\n' + chalk.cyan('Next steps:'));
     console.log(chalk.white(`  cd ${config.projectName}`));
+    console.log(chalk.white('  npm install'));
     console.log(chalk.white('  cp .env.example .env'));
-    console.log(chalk.white('  # Edit .env with your Twilio credentials'));
-    console.log(chalk.white('  # Edit src/lib/prompts/instructions.md with your agent instructions'));
-    console.log(chalk.white(`  ${config.packageManager} run build`));
-    console.log(chalk.white(`  ${config.packageManager} start`));
+    console.log(chalk.white('  # Edit .env with your configuration'));
+    console.log(chalk.white('  npm run dev'));
+    
+    console.log('\n' + chalk.yellow('Important:'));
+    console.log(chalk.white('  - Configure your .env file with your API keys'));
+    console.log(chalk.white('  - Set up your Twilio webhook URLs'));
+    console.log(chalk.white('  - Configure your ngrok tunnel for local development'));
     
   } catch (error) {
     spinner.fail(chalk.red('Failed to create project'));
+    console.error(chalk.red('Error:'), error.message);
     throw error;
   }
 }

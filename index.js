@@ -6,7 +6,7 @@ const chalk = require('chalk');
 const ora = require('ora');
 const fs = require('fs-extra');
 const path = require('path');
-const { generateProject } = require('./generator');
+const { generateProject } = require('./generator-modular');
 
 program
   .name('create-twilio-agent')
@@ -53,7 +53,7 @@ async function getProjectConfig(projectName, options) {
 
   if (options.yes) {
     // Use defaults - include most common tools
-    answers.toolCalls = ['sendText', 'sendRCS', 'getSegmentProfile', 'sendToLiveAgent', 'switchLanguage'];
+    answers.toolCalls = ['sendText', 'sendRCS', 'sendEmail', 'getSegmentProfile', 'getSegmentEvents', 'updateSegmentProfile', 'postSegmentTrack', 'getAirtableData', 'upsertAirtableData', 'sendToLiveAgent', 'switchLanguage'];
     answers.packageManager = 'npm';
     answers.git = true;
   } else {
