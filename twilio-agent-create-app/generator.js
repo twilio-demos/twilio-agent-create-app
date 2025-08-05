@@ -92,6 +92,7 @@ async function generatePackageJson(projectPath, config) {
       "express": "^4.18.2",
       "express-ws": "^5.0.2",
       "ws": "^8.14.2",
+      "fs-extra": "^11.1.1",
       "dotenv": "^16.3.1",
       "axios": "^1.5.0",
       "openai": "^4.20.0",
@@ -106,6 +107,7 @@ async function generatePackageJson(projectPath, config) {
       "@types/express": "^4.17.17",
       "@types/express-ws": "^3.0.1",
       "@types/ws": "^8.5.7",
+      "@types/fs-extra": "^11.0.2",
       "@types/cors": "^2.8.14",
       "@types/morgan": "^1.9.5",
       "@types/compression": "^1.7.3",
@@ -331,10 +333,10 @@ export class LLMService {
   }
 
   // Event emitter methods
-  on: (typeof this.emitter)['on'] = (...args) => this.emitter.on(...args);
-  emit: (typeof this.emitter)['emit'] = (...args) => this.emitter.emit(...args);
-  removeAllListeners: (typeof this.emitter)['removeAllListeners'] = (...args) =>
-    this.emitter.removeAllListeners(...args);
+  on: (typeof this.emitter)['on'] = (...args: any[]) => this.emitter.on(...(args as [any, any]));
+  emit: (typeof this.emitter)['emit'] = (...args: any[]) => this.emitter.emit(...(args as [any, ...any[]]));
+  removeAllListeners: (typeof this.emitter)['removeAllListeners'] = (...args: any[]) =>
+    this.emitter.removeAllListeners(...(args as [any?]));
 
   // Voice call state management
   get isVoiceCall(): boolean {
@@ -911,13 +913,15 @@ export interface LLMEvents {
 }
 
 export class TypedEventEmitter<T> extends EventEmitter {
-  on<K extends keyof T>(event: K, listener: T[K]): this;
-  on(event: string | symbol, listener: (...args: any[]) => void): this {
+  on<K extends keyof T>(event: K, listener: T[K] extends (...args: any[]) => any ? T[K] : never): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
+  on(event: any, listener: any): this {
     return super.on(event, listener);
   }
 
-  emit<K extends keyof T>(event: K, ...args: Parameters<T[K]>): boolean;
-  emit(event: string | symbol, ...args: any[]): boolean {
+  emit<K extends keyof T>(event: K, ...args: T[K] extends (...args: infer P) => any ? P : never[]): boolean;
+  emit(event: string | symbol, ...args: any[]): boolean;
+  emit(event: any, ...args: any[]): boolean {
     return super.emit(event, ...args);
   }
 }
@@ -1432,7 +1436,7 @@ export type RouteNames = typeof routeNames[keyof typeof routeNames];
 
   // Generate call.ts
   const callRouteTemplate = `import { Router } from 'express';
-import { Twilio } from 'twilio';
+import { twiml } from 'twilio';
 
 const router = Router();
 
@@ -1469,21 +1473,20 @@ router.get('/call', async (req, res) => {
   console.log('🔧 NGROK_URL:', process.env.NGROK_URL);
   console.log('🔧 LIVE_HOST_URL:', process.env.LIVE_HOST_URL);
 
-  const twiml = new Twilio.twiml.VoiceResponse();
+  const twilioTwiml = new twiml.VoiceResponse();
   
   // Connect to ConversationRelay
-  const connect = twiml.connect();
-  connect.conversation({
-    serviceInstanceSid: process.env.TWILIO_CONVERSATION_SERVICE_SID!,
-    participantIdentity: callerNumber,
-    targetParticipantIdentity: 'agent'
+  const connect = twilioTwiml.connect();
+  connect.conversationRelay({
+    url: relayUrl,
+    participantLabel: callerNumber
   });
 
   // Set action URL for handoff
-  twiml.action(baseActionUrl);
+  twilioTwiml.action(baseActionUrl);
 
   res.type('text/xml');
-  res.send(twiml.toString());
+  res.send(twilioTwiml.toString());
 });
 
 export default router;
@@ -1659,7 +1662,7 @@ router.post('/text', async (req, res) => {
 export default router;`,
 
     liveAgent: `import { Router } from 'express';
-import { Twilio } from 'twilio';
+import { twiml } from 'twilio';
 
 const router = Router();
 
@@ -1669,26 +1672,25 @@ router.post('/live-agent', async (req, res) => {
 
   console.log('Received live agent request:', { from, to, direction, customerNumber });
 
-  const twiml = new Twilio.twiml.VoiceResponse();
+  const twilioTwiml = new twiml.VoiceResponse();
   
   if (process.env.TWILIO_WORKFLOW_SID) {
-    twiml
-      .enqueue({
-        workflowSid: process.env.TWILIO_WORKFLOW_SID,
-        taskAttributes: JSON.stringify({
-          name: customerNumber,
-          handoffReason: 'Customer requested live agent',
-          reasonCode: 'live_agent_request',
-          conversationSummary: 'Customer transferred to live agent'
-        })
-      });
+    const enqueue = twilioTwiml.enqueue({ 
+      workflowSid: process.env.TWILIO_WORKFLOW_SID 
+    });
+    enqueue.task(JSON.stringify({
+      name: customerNumber,
+      handoffReason: 'Customer requested live agent',
+      reasonCode: 'live_agent_request',
+      conversationSummary: 'Customer transferred to live agent'
+    }));
   } else {
-    twiml.say('Please hold while we transfer you to a live agent.');
-    twiml.hangup();
+    twilioTwiml.say('Please hold while we transfer you to a live agent.');
+    twilioTwiml.hangup();
   }
 
   res.type('text/xml');
-  res.send(twiml.toString());
+  res.send(twilioTwiml.toString());
 });
 
 export default router;`,
