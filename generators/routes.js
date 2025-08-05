@@ -4,7 +4,7 @@ const path = require('path');
 async function generateRoutes(projectPath, config) {
   const routesDir = path.join(projectPath, 'src', 'routes');
   await fs.ensureDir(routesDir);
-  
+
   // Generate routeNames.ts
   const routeNamesTemplate = `export const routeNames = {
   call: 'call',
@@ -26,6 +26,7 @@ export type RouteNames = typeof routeNames[keyof typeof routeNames];
   // Generate call.ts
   const callRouteTemplate = `import { Router } from 'express';
 import { twiml } from 'twilio';
+import { languages } from '../lib/config/languages';
 
 const router = Router();
 
@@ -66,15 +67,112 @@ router.get('/call', async (req, res) => {
   
   // Connect to ConversationRelay
   const connect = twilioTwiml.connect({
-    action: \`\${baseActionUrl}?method=POST\`
-  });
-  
-  connect.conversationRelay({
-    url: relayUrl
+    action: \`\${baseActionUrl}?method=POST\`,
   });
 
+  // Define comprehensive parameters for the ConversationRelay
+  const relayParams = {
+    url: relayUrl,
+    voice: 'g6xIsTj2HwM6VR4iXFCw', // Default ElevenLabs voice for English
+    transcriptionProvider: 'Deepgram', // Primary transcription provider
+    ttsProvider: 'ElevenLabs', // Text-to-Speech provider
+    speechModel: 'nova-2-general', // Speech model for transcription
+    dtmfDetection: true, // DTMF detection enabled
+    debug: 'true', // Debugging enabled for troubleshooting (string type)
+  };
+
+  
+  const conversationRelay = connect.conversationRelay(relayParams);
+  console.log('✅ ConversationRelay created successfully');
+
+  // Configure supported languages for TwiML
+  try {
+
+    
+    // Filter to working languages (those with proper Twilio configuration)
+    const workingLanguages = languages.filter(
+      (lang) =>
+        lang.value === 'en-US' ||
+        lang.value === 'de-DE' ||
+        lang.value === 'fr-FR' ||
+        lang.value === 'es-ES' ||
+        lang.value === 'pt-BR' ||
+        lang.value === 'ja-JP' ||
+        lang.value === 'hi-IN' ||
+        lang.value === 'nl-NL' ||
+        lang.value === 'it-IT' ||
+        lang.value === 'zh-CN'
+    );
+
+
+    // Configure each language individually
+    let configuredCount = 0;
+    let failedCount = 0;
+    
+    workingLanguages.forEach((language, index) => {
+      try {
+        // Build language configuration with detailed settings
+        const languageConfig = {
+          code: language.value,
+          ttsProvider: relayParams.ttsProvider, // Use default from relayParams
+          transcriptionProvider: relayParams.transcriptionProvider, // Use default from relayParams
+          speechModel: relayParams.speechModel, // Use default from relayParams
+          voice: language.twilioConfig.voice || relayParams.voice,
+        };
+
+
+        // Add language to ConversationRelay
+        conversationRelay.language(languageConfig);
+        configuredCount++;
+        
+      } catch (languageError) {
+        failedCount++;
+        console.error(\`❌ Failed to configure language \${language.value}:\`, languageError);
+      }
+    });
+
+    console.log(\`📊 Language configuration summary:\`);
+    console.log(\`   - Successfully configured: \${configuredCount} languages\`);
+    console.log(\`   - Failed: \${failedCount} languages\`);
+    console.log(\`   - Total attempted: \${workingLanguages.length} languages\`);
+    
+    if (configuredCount === 0) {
+      throw new Error('No languages were successfully configured');
+    }
+    
+  } catch (error) {
+    console.error('❌ Critical error during language configuration:', error);
+    console.error('📍 Error details:', {
+      message: error.message,
+      stack: error.stack?.split('\\n').slice(0, 3).join('\\n')
+    });
+
+    // Fallback to English-only configuration
+    console.log('🔄 Implementing fallback: English-only configuration...');
+    
+    try {
+      const fallbackConfig = {
+        code: 'en-US',
+        ttsProvider: 'ElevenLabs',
+        voice: 'g6xIsTj2HwM6VR4iXFCw',
+        transcriptionProvider: 'Deepgram',
+        speechModel: 'nova-2-general',
+      };
+      
+      console.log('🔄 Fallback language config:', fallbackConfig);
+      conversationRelay.language(fallbackConfig);
+      console.log('✅ Fallback English configuration applied successfully');
+    } catch (fallbackError) {
+      console.error('💥 CRITICAL: Even fallback configuration failed:', fallbackError);
+      // Continue anyway - let Twilio handle with defaults
+    }
+  }
+
+  // Send response
   res.type('text/xml');
-  res.send(twilioTwiml.toString());
+  res.send(twimlString);
+  
+  console.log('📤 TwiML response sent successfully');
 });
 
 export default router;
@@ -253,6 +351,12 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
             content: data.voicePrompt || ''
           });
           await llm.run();
+        } else if (data.type === 'info') {
+          // Handle info messages (heartbeat/status updates from Twilio)
+          console.log('📊 Info message from Twilio for ' + phoneNumber + ':', {
+            timestamp: new Date().toISOString(),
+            data: data
+          });
         } else if (data.type === 'error') {
           console.error('Error from Twilio:', data.description);
         } else {
@@ -288,7 +392,10 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
 export { activeConversations, phoneLogs, recentActivity };
 `;
 
-  await fs.writeFile(path.join(routesDir, 'conversationRelay.ts'), conversationRelayTemplate);
+  await fs.writeFile(
+    path.join(routesDir, 'conversationRelay.ts'),
+    conversationRelayTemplate
+  );
 
   // Generate other routes
   const otherRoutes = {
@@ -486,7 +593,7 @@ router.get('/live-numbers', async (req, res) => {
   }
 });
 
-export default router;`
+export default router;`,
   };
 
   // Generate other route files
@@ -496,4 +603,4 @@ export default router;`
   }
 }
 
-module.exports = { generateRoutes }; 
+module.exports = { generateRoutes };
