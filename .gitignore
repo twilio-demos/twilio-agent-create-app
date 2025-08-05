@@ -1,0 +1,13 @@
+# Node Websocket server
+pnpm-lock.yaml
+node_modules/.modules.yaml
+node_modules
+.env
+.env.*
+!env.example
+fly.toml
+snowflake.log
+dist
+
+**/.DS_Store
+test-agent
