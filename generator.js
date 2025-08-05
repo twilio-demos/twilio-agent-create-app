@@ -1131,37 +1131,59 @@ export const sendTextManifest: ToolManifest = {
   }
 };`,
       executor: `import { Twilio } from 'twilio';
-import { ToolResult, LocalTemplateData } from '../../lib/types';
+import { ToolResult } from '../../lib/types';
 
 export async function execute(
   args: { to: string; message: string },
-  toolData: LocalTemplateData['toolData']
+  toolData: any
 ): Promise<ToolResult> {
   const { to, message } = args;
   
   try {
-    const client = new Twilio(
-      toolData.twilioAccountSid,
-      toolData.twilioAuthToken
-    );
+    // Get Twilio credentials from environment variables
+    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioConversationNumber = process.env.TWILIO_CONVERSATION_NUMBER;
+    
+    if (!twilioAccountSid) {
+      throw new Error('Missing TWILIO_ACCOUNT_SID environment variable');
+    }
+    
+    if (!twilioAuthToken) {
+      throw new Error('Missing TWILIO_AUTH_TOKEN environment variable');
+    }
+    
+    if (!twilioConversationNumber) {
+      throw new Error('Missing TWILIO_CONVERSATION_NUMBER environment variable');
+    }
+    
+    if (!message || !to) {
+      return {
+        success: false,
+        error: 'Message and phone number are required',
+      };
+    }
+    
+    const client = new Twilio(twilioAccountSid, twilioAuthToken);
     
     const result = await client.messages.create({
       body: message,
       to: to,
-      from: toolData.twilioPhoneNumber
+      from: twilioConversationNumber
     });
     
     return {
       success: true,
       data: {
         messageId: result.sid,
-        status: result.status
+        status: result.status,
+        message: 'Message sent successfully'
       }
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Failed to send message'
     };
   }
 }`
@@ -1702,16 +1724,85 @@ export { activeConversations, phoneLogs, recentActivity };
   // Generate other routes
   const otherRoutes = {
     sms: `import { Router } from 'express';
+import twilio from 'twilio';
+
+// Local imports
+import { getLocalTemplateData } from '../lib/utils/llm/getTemplateData';
+import { activeConversations } from './conversationRelay';
+import { LLMService } from '../llm';
+import { routeNames } from './routeNames';
+
 const router = Router();
 
-router.post('/text', async (req, res) => {
+router.post(\`/\${routeNames.sms}\`, async (req, res) => {
   try {
+    const callType =
+      req.body.To.includes('whatsapp:') || req.body.From.includes('whatsapp:')
+        ? 'whatsapp'
+        : 'sms';
+
     const { From: from, Body: body, To: to } = req.body;
+
+    // Validate required fields at the top
+    if (!from || !body) {
+      console.error('Missing required fields:', { from, body });
+      return res.status(400).send('Missing required fields');
+    }
+
     console.log('Received SMS from ' + from + ': ' + body);
-    res.status(200).send();
+
+    // Check if there's an active conversation for this number
+    const conversation = activeConversations.get(from);
+
+    if (conversation && conversation.llm) {
+      const { llm } = conversation;
+
+      // Add message to conversation history
+      llm.addMessage({
+        role: 'user',
+        content: body,
+      });
+
+      // Process with LLM
+      await llm.run();
+    } else {
+      // Create new conversation for this number
+      const templateData = await getLocalTemplateData();
+      const llm = new LLMService(from, templateData);
+
+      // Reset voice call flag for SMS conversations
+      llm.isVoiceCall = false;
+
+      // Store the conversation
+      activeConversations.set(from, {
+        ws: null as any, // No WebSocket for SMS-only conversations
+        llm,
+        ttl: Date.now() + 60 * 60 * 1000, // TTL: current time + 1 hour
+      });
+
+      llm.addMessage({
+        role: 'system',
+        content: \`The customer's phone number is \${from}. 
+        The agent's phone number is \${to}.
+        This is an \${callType} conversation.\`,
+      });
+
+      // Add user's message and start conversation
+      llm.addMessage({
+        role: 'user',
+        content: body,
+      });
+
+      await llm.run();
+    }
+
+    // Send TwiML response
+    const twiml = new twilio.twiml.MessagingResponse();
+    res.type('text/xml');
+    return res.send(twiml.toString());
   } catch (error: any) {
     console.error('SMS error:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).send('Error processing message');
   }
 });
 
