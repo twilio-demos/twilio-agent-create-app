@@ -316,6 +316,11 @@ export interface ToolResult {
   error?: string;
 }
 
+export interface SwitchLanguageParams {
+  ttsLanguage: string;
+  transcriptionLanguage: string;
+}
+
 export interface ToolExecutorParams {
   currentToolName: string;
   args: any;
