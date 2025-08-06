@@ -38,7 +38,8 @@ router.get('/call', async (req, res) => {
     From: fromNumber,
     To: toNumber,
     Direction: direction,
-  } = req.query as { From?: string; To?: string; Direction?: string };
+    CallSid: callSid,
+  } = req.query as { From?: string; To?: string; Direction?: string; CallSid?: string };
 
   // For outbound calls, use the "To" number as the caller number
   let callerNumber: string;
@@ -56,8 +57,8 @@ router.get('/call', async (req, res) => {
     : 'https://' + (process.env.NGROK_URL || req.get('host')) + '/live-agent';
 
   const relayUrl = isProduction
-    ? 'wss://' + process.env.LIVE_HOST_URL + '/conversation-relay'
-    : 'wss://' + (process.env.NGROK_URL || req.get('host')) + '/conversation-relay';
+    ? \`wss://\${process.env.LIVE_HOST_URL}/conversation-relay?callSid=\${callSid || 'unknown'}&from=\${fromNumber || 'unknown'}&to=\${toNumber || 'unknown'}&direction=\${direction || 'unknown'}\`
+    : \`wss://\${process.env.NGROK_URL || req.get('host')}/conversation-relay?callSid=\${callSid || 'unknown'}&from=\${fromNumber || 'unknown'}&to=\${toNumber || 'unknown'}&direction=\${direction || 'unknown'}\`;
 
   console.log('🔧 Relay URL:', relayUrl);
   console.log('🔧 NGROK_URL:', process.env.NGROK_URL);
@@ -188,6 +189,7 @@ const activeConversations = new Map<string, {
   ws: WebSocket;
   llm: LLMService | null;
   ttl: number;
+  targetWorker?: string;
 }>();
 
 // Store phone logs
@@ -224,14 +226,24 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
-  app.ws('/conversation-relay', async (ws, req) => {
+  app.ws('/conversation-relay', (ws) => {
     let phoneNumber: string = 'unknown';
     let llm: LLMService;
     
     console.log('WebSocket connection established');
     
-    // Get template data from local files
-    const templateData = await getLocalTemplateData();
+    // Create a simple wrapper to mimic TypedWs.end() behavior
+    const wss = {
+      send: (data: any) => ws.send(JSON.stringify(data)),
+      end: (handoffData?: Record<string, any>) => {
+        // Send end message with handoff data (like ramp-agent's TypedWs)
+        ws.send(JSON.stringify({ 
+          type: 'end', 
+          handoffData: JSON.stringify(handoffData ?? {}) 
+        }));
+      },
+      close: () => ws.close()
+    };
 
     ws.on('message', async (message) => {
       try {
@@ -246,8 +258,8 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
         
         // Handle different message types from Twilio ConversationRelay
         if (data.type === 'setup') {
-          // Extract phone number from setup message
-          const { from, to, direction } = data;
+          // Extract call parameters from setup message
+          const { from, to, direction, callSid } = data;
           
           if (direction && direction.includes('outbound')) {
             // For outbound calls, the customer is the 'to' number
@@ -259,32 +271,44 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
             console.log('Inbound call detected. Customer number: ' + phoneNumber + ', Twilio number: ' + to);
           }
           
-          // Initialize LLM service with the correct phone number
+          // Get template data and initialize LLM service
+          const templateData = await getLocalTemplateData();
           llm = new LLMService(phoneNumber, templateData);
+          
+          // Set call context with callSid (like ramp-agent does)
+          await llm.setCallContext(from, to, direction, callSid);
           
           // Store the connection
           activeConversations.set(phoneNumber, {
             ws,
             llm,
-            ttl: Date.now() + (30 * 60 * 1000) // 30 minutes TTL
+            ttl: Date.now() + (30 * 60 * 1000), // 30 minutes TTL
+            targetWorker: process.env.TWILIO_FLEX_WORKER_SID
           });
           
           // Set up LLM event handlers
           llm.on('text', (chunk: string, isFinal: boolean, fullText?: string) => {
             // Send text token to Twilio ConversationRelay
-            // Format should be { type: 'text', token, last }
-            ws.send(JSON.stringify({
+            wss.send({
               type: 'text',
               token: chunk,
               last: isFinal
-            }));
+            });
           });
 
           llm.on('handoff', (data: any) => {
-            ws.send(JSON.stringify({
-              type: 'handoff',
-              data
-            }));
+            // Get the stored conversation to access targetWorker
+            const conversation = activeConversations.get(phoneNumber);
+            const enhancedData = {
+              ...data,
+              targetWorker: conversation?.targetWorker || process.env.TWILIO_FLEX_WORKER_SID || undefined,
+            };
+            
+            console.log('🔄 Initiating live agent handoff:', enhancedData);
+            console.log('📞 Call status: Transferring to live agent');
+            
+            // Use wss.end() like ramp-agent (triggers Connect verb)
+            wss.end(enhancedData);
           });
 
           llm.on('language', (data: any) => {
@@ -295,7 +319,7 @@ export const setupConversationRelayRoute = (app: ExpressWs.Application) => {
             };
 
             console.log('Sending language message to Twilio:', languageMessage);
-            ws.send(JSON.stringify(languageMessage));
+            wss.send(languageMessage);
           });
 
           // Start the conversation

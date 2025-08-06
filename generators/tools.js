@@ -255,6 +255,10 @@ export const sendToLiveAgentManifest: ToolManifest = {
     parameters: {
       type: 'object',
       properties: {
+        callSid: {
+          type: 'string',
+          description: 'Call SID from Twilio'
+        },
         reason: {
           type: 'string',
           description: 'Reason for handoff'
@@ -265,7 +269,7 @@ export const sendToLiveAgentManifest: ToolManifest = {
           enum: ['low', 'medium', 'high', 'urgent']
         }
       },
-      required: ['reason']
+      required: ['callSid', 'reason']
     }
   }
 };`,
@@ -478,6 +482,9 @@ export async function execute(
 ): Promise<ToolResult> {
   const { phone } = args as GetSegmentProfileParams;
   const { spaceProfile, tokenProfile } = getToolEnvData(toolData);
+  
+  // Ensure phone number has + prefix for Segment API
+  const formattedPhone = phone.startsWith('+') ? phone : \`+\${phone}\`;
 
   try {
     if (!spaceProfile) {
@@ -492,7 +499,7 @@ export async function execute(
       );
     }
 
-    const encodedPhone = encodeURIComponent(phone);
+    const encodedPhone = encodeURIComponent(formattedPhone);
     const URL = \`https://profiles.segment.com/v1/spaces/\${spaceProfile}/collections/users/profiles/phone:\${encodedPhone}/traits?limit=200\`;
     const response = await axios.get<{ traits: SegmentProfile['traits'] }>(
       URL,
@@ -511,7 +518,7 @@ export async function execute(
         sender: 'system:customer_profile',
         type: 'JSON',
         message: JSON.stringify({ customerData: customerData }),
-        phoneNumber: phone,
+        phoneNumber: formattedPhone,
       },
       process.env.WEBHOOK_URL
     ).catch((err) => console.error('Failed to send to webhook:', err));
