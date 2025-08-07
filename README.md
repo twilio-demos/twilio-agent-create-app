@@ -16,21 +16,15 @@
 ## 1. Generate Your Agent
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/twilio-agent-create-app
-
-# Navigate to your project
-cd twilio-agent-create-app
-
-# Generate a new agent
-node index.js my-agent
+# Initialize the repo
+npx create-twilio-agent
 ```
 
 ## 2. Configure Environment Variables
 
 ```bash
 # Navigate to your generated agent
- cd my-agent
+ cd <project name>
 
 # Rename the template to .env:
 cp .env.example .env
