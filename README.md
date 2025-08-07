@@ -1,149 +1,126 @@
 # create-twilio-agent
 
-Create a new Twilio agent with a single command.
 
-## Quick Start
+## How to run
+
+
+
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- Twilio Account
+
+
+## 🛠️ Setup
+
+## 1. Generate Your Agent
 
 ```bash
-npx create-twilio-agent my-agent
+# Clone the repository
+git clone https://github.com/your-username/twilio-agent-create-app
+
+# Navigate to your project
+cd twilio-agent-create-app
+
+# Generate a new agent
+node index.js my-agent
 ```
 
-This will create a new Twilio agent project in the `my-agent` directory.
-
-## Usage
-
-### Interactive Mode (Default)
+## 2. Configure Environment Variables
 
 ```bash
-npx create-twilio-agent
-```
+# Navigate to your generated agent
+ cd my-agent
 
-This will prompt you for:
-- Project name
-- Voice agent tools to include
-- Package manager preference (npm, yarn, pnpm)
-- Git repository initialization
-
-### Non-Interactive Mode
-
-```bash
-npx create-twilio-agent my-agent --yes
-```
-
-This creates a project with default settings:
-- Project name: `my-agent`
-- Includes common tools (sendText, sendRCS, getSegmentProfile, etc.)
-- Uses npm as package manager
-- Initializes git repository
-
-## What Gets Created
-
-The generated project includes:
-
-### Core Files
-- `app.ts` - Main application file
-- `llm.ts` - Language model configuration
-- `voices.ts` - Voice configuration
-
-### Library Structure
-- `lib/` - Core library files
-- `lib/types.ts` - TypeScript type definitions
-- `lib/utils.ts` - Utility functions
-
-### Routes
-- `routes/` - API route handlers
-- `routes/webhook.ts` - Twilio webhook handler
-
-### Tools
-- `tools/` - Voice agent tools
-- Individual tool files based on your selection
-
-### Configuration
-- `package.json` - Project dependencies and scripts
-- `tsconfig.json` - TypeScript configuration
-- `Procfile` - Heroku deployment configuration
-- `.env.example` - Environment variables template
-- `.gitignore` - Git ignore file
-
-## Available Tools
-
-The generator can include these voice agent tools:
-
-- **Send Text Message** (`sendText`) - Send SMS messages
-- **Send RCS Message** (`sendRCS`) - Send Rich Communication Services messages
-- **Send Email** (`sendEmail`) - Send email messages
-- **Get Customer Profile** (`getSegmentProfile`) - Retrieve customer data from Segment
-- **Get Customer Events** (`getSegmentEvents`) - Get customer event history
-- **Update Customer Profile** (`updateSegmentProfile`) - Update customer profile data
-- **Track Customer Event** (`postSegmentTrack`) - Track customer events
-- **Get Customer Data** (`getAirtableData`) - Retrieve data from Airtable
-- **Update Customer Data** (`upsertAirtableData`) - Update Airtable records
-- **Send to Live Agent** (`sendToLiveAgent`) - Transfer to human agent
-- **Switch Language** (`switchLanguage`) - Change conversation language
-
-## Getting Started
-
-After creating your project:
-
-```bash
-cd my-agent
-npm install
+# Rename the template to .env:
 cp .env.example .env
-# Edit .env with your configuration
-npm run dev
 ```
 
-## Environment Configuration
 
-Edit the `.env` file with your configuration:
+## 3. Fill In Your Environment Variables:
+
+### Setup Ngrok
+
+Create a static domain here: https://ngrok.com/blog-post/free-static-domains-ngrok-users#reserve-your-static-domain
+
+Copy your domain url
+
+Run `ngrok http 3001 --domain <your static url>.ngrok-free.app` replacing `<your static url>` with your own, leave that terminal running on the side. If it worked, you should see something like this:
+
+<img width="588" height="373" alt="Screenshot 2025-08-06 at 9 40 07 PM" src="https://github.com/user-attachments/assets/daaff362-5908-448d-9b6b-e715de8c91be" />
+
+
+
+
+Go to https://console.twilio.com/us1/develop/phone-numbers/manage/incoming and purchase a number if you do not have one already
+
+Replace your "A call comes in" webhook like so:
+
+`https://` + your ngrok webhook + `/call`
+
+Make it a `GET` call, NOT `POST`
+
+<img width="625" height="259" alt="Screenshot 2025-08-06 at 6 41 52 PM" src="https://github.com/user-attachments/assets/c0bd144b-81cd-4ab7-8a86-b31476b16b5b" />
+
+
+### Twilio Configuration
+
+Go to
+   https://console.twilio.com/
+ 
+   Find `Account SID` and `Auth Token`
+
+   ```env
+   TWILIO_ACCOUNT_SID=your_account_sid
+
+   TWILIO_AUTH_TOKEN=your_auth_token
+   ```
+
+   Swap out call webhook url for your console’s phone configuration to use your ngrok custom url:
+
+
+ 
+
+Next, we need to fill in the .env with our OpenAI API token. To generate an OpenAPI API KEY. Go to https://platform.openai.com/api-keys -> login -> hit `+ Create new secret key` and copy the api key into your `.env` file
 
 ```env
-# Twilio Configuration
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_phone_number
-
-# Segment Configuration (if using customer tools)
-SEGMENT_WRITE_KEY=your_segment_write_key
-
-# Airtable Configuration (if using Airtable tools)
-AIRTABLE_API_KEY=your_airtable_api_key
-AIRTABLE_BASE_ID=your_airtable_base_id
-
-# Other Configuration
-NODE_ENV=development
-PORT=3000
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o
 ```
+   
 
-## Development
 
-To run the project locally:
+##  Features
 
-```bash
-npm run dev
-```
+- **Voice AI Agent**: Powered by OpenAI GPT models
+- **Twilio Integration**: Full ConversationRelay support
+- **Multi-language Support**: 10+ languages with TTS/STT
+- **Tool System**: Extensible tool framework
+- **RCS Messaging**: Rich Communication Services support
+- **Live Agent Handoff**: Seamless transfer to human agents
+- **Webhook Support**: Real-time event notifications
 
-This will start the development server on port 3000.
 
-## Deployment
 
-The generated project includes a `Procfile` for easy deployment to Heroku:
+### Available Tools
 
-```bash
-git push heroku main
-```
+- `getSegmentProfile` - Get customer profile data from Segment
+- `getSegmentEvents` - Retrieve customer event history from Segment
+- `postSegmentTrack` - Track customer events in Segment
+- `updateSegmentProfile` - Update customer profile in Segment
+- `getAirtableData` - Retrieve data from Airtable
+- `upsertAirtableData` - Insert or update data in Airtable
+- `sendText` - Send SMS messages
+- `sendRCS` - Send Rich Communication Services messages
+- `sendToLiveAgent` - Transfer to human agent
+- `sendEmail` - Send emails via SendGrid
+- `switchLanguage` - Change conversation language
 
-## Contributing
+### Customization
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+Edit these files to customize your agent:
 
-## License
+- `src/lib/prompts/instructions.md` - Agent behavior and personality
+- `src/lib/prompts/context.md` - Business context and domain knowledge
+- `src/tools/` - Add custom tools
 
-MIT
-
-## Support
-
-For support, please open an issue on GitHub or contact the maintainers.

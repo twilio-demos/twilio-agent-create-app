@@ -139,10 +139,10 @@ export async function sendToWebhook(
   webhookUrl?: string
 ): Promise<void> {
   if (!webhookUrl) {
-    log.warn({
-      label: 'webhook',
-      message: 'No webhook URL provided, skipping webhook send',
-    });
+    // log.warn({
+    //   label: 'webhook',
+    //   message: 'No webhook URL provided, skipping webhook send',
+    // });
     return;
   }
 

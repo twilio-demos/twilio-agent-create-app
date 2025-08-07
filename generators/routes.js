@@ -31,6 +31,14 @@ import { languages } from '../lib/config/languages';
 const router = Router();
 
 router.get('/call', async (req, res) => {
+  await handleCallRequest(req, res);
+});
+
+router.post('/call', async (req, res) => {
+  await handleCallRequest(req, res);
+});
+
+async function handleCallRequest(req, res) {
   const env = process.env.NODE_ENV;
   const isProduction = env === 'production';
 
@@ -170,7 +178,7 @@ router.get('/call', async (req, res) => {
   res.send(twilioTwiml.toString());
   
   console.log('📤 TwiML response sent successfully');
-});
+}
 
 export default router;
 `;
