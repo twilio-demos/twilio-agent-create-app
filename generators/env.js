@@ -46,23 +46,6 @@ LIVE_HOST_URL=
 SERVICE_NAME=
 
 
-#---------------SEGMENT---------------: 
-# description: The write key used in segment for posting tracking events
-# format: spaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# required: false
-SEGMENT_SPACE=
-
-# description: The api key used in segment for accessing the profile
-# format: hashed_value
-# required: false
-SEGMENT_TOKEN=
-
-# description: The write key used in segment for accessing the profile
-# format: hashed_value
-# required: false
-SEGMENT_WRITE_KEY=
-
-
 #---------------TWILIO---------------: 
 # description: The Account SID for your Twilio account
 # format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -100,21 +83,21 @@ TWILIO_CONTENT_SID=
 TWILIO_CONVERSATIONAL_INTELLIGENCE_SID=
 
 
-#---------------AIRTABLE---------------: 
-# description: The api key used in sending /receiving payloads to Airtable
+#---------------SEGMENT---------------: 
+# description: The write key used in segment for posting tracking events
+# format: spaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: false
+SEGMENT_SPACE=
+
+# description: The api key used in segment for accessing the profile
 # format: hashed_value
 # required: false
-AIRTABLE_API_KEY=
+SEGMENT_TOKEN=
 
-# description: The base id used in sending /receiving payloads to the targeted Airtable base
-# format: appxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# description: The write key used in segment for accessing the profile
+# format: hashed_value
 # required: false
-AIRTABLE_BASE_ID=
-
-# description: The base name used in sending /receiving payloads to the targeted Airtable base
-# format: string
-# required: false
-AIRTABLE_BASE_NAME=
+SEGMENT_WRITE_KEY=
 
 
 #---------------Sendgrid---------------: 
@@ -132,6 +115,23 @@ SENDGRID_TEMPLATE_ID=
 # format: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # required: false
 SENDGRID_DOMAIN=
+
+
+#---------------AIRTABLE---------------: 
+# description: The api key used in sending /receiving payloads to Airtable
+# format: hashed_value
+# required: false
+AIRTABLE_API_KEY=
+
+# description: The base id used in sending /receiving payloads to the targeted Airtable base
+# format: appxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: false
+AIRTABLE_BASE_ID=
+
+# description: The base name used in sending /receiving payloads to the targeted Airtable base
+# format: string
+# required: false
+AIRTABLE_BASE_NAME=
 `;
 
   await fs.writeFile(path.join(projectPath, '.env.example'), envTemplate);
