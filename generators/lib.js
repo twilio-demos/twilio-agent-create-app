@@ -139,10 +139,10 @@ export async function sendToWebhook(
   webhookUrl?: string
 ): Promise<void> {
   if (!webhookUrl) {
-    log.warn({
-      label: 'webhook',
-      message: 'No webhook URL provided, skipping webhook send',
-    });
+    // log.warn({
+    //   label: 'webhook',
+    //   message: 'No webhook URL provided, skipping webhook send',
+    // });
     return;
   }
 
@@ -231,8 +231,10 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
       segmentWorkspace: process.env.SEGMENT_WORKSPACE,
       airtableApiKey: process.env.AIRTABLE_API_KEY,
       airtableBaseId: process.env.AIRTABLE_BASE_ID,
-      emailApiKey: process.env.EMAIL_API_KEY,
-      emailFromAddress: process.env.EMAIL_FROM_ADDRESS,
+      // SendGrid variables (corrected names)
+      sendGridApiKey: process.env.SENDGRID_API_KEY,
+      sendGridDomain: process.env.SENDGRID_DOMAIN,
+      sendGridTemplateId: process.env.SENDGRID_TEMPLATE_ID,
     },
   };
 

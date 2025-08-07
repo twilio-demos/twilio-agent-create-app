@@ -135,6 +135,23 @@ export class LLMService {
     this.model = process.env.OPENAI_MODEL || 'gpt-4o';
   }
 
+  public async setCallContext(from: string, to: string, direction: string, callSid: string) {
+    // Add call context like ramp-agent does
+    const callerPhoneNumber = direction.includes('outbound') ? to : from;
+    const twilioNumber = direction.includes('outbound') ? from : to;
+    
+    // Store the Twilio number in templateData for tools to use
+    if (this.templateData) {
+      this.templateData.toolData = this.templateData.toolData || {};
+      this.templateData.toolData.twilioNumber = twilioNumber;
+    }
+    
+    this.addMessage({
+      role: 'system',
+      content: \`The customer's phone number is \${callerPhoneNumber} and the Twilio number you are calling from is \${twilioNumber}. Your call SID is \${callSid}. This is a \${direction} call.\`,
+    });
+  }
+
   public async notifyInitialCallParams() {
     await sendToWebhook(
       {

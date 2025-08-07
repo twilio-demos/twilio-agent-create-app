@@ -73,11 +73,11 @@ export const sendTextManifest: ToolManifest = {
   }
 };`,
       executor: `import { Twilio } from 'twilio';
-import { ToolResult } from '../../lib/types';
+import { ToolResult, LocalTemplateData } from '../../lib/types';
 
 export async function execute(
   args: { to: string; message: string },
-  toolData: any
+  toolData: LocalTemplateData['toolData']
 ): Promise<ToolResult> {
   const { to, message } = args;
   
@@ -85,7 +85,6 @@ export async function execute(
     // Get Twilio credentials from environment variables
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-    const twilioConversationNumber = process.env.TWILIO_CONVERSATION_NUMBER;
     
     if (!twilioAccountSid) {
       throw new Error('Missing TWILIO_ACCOUNT_SID environment variable');
@@ -95,10 +94,6 @@ export async function execute(
       throw new Error('Missing TWILIO_AUTH_TOKEN environment variable');
     }
     
-    if (!twilioConversationNumber) {
-      throw new Error('Missing TWILIO_CONVERSATION_NUMBER environment variable');
-    }
-    
     if (!message || !to) {
       return {
         success: false,
@@ -106,12 +101,20 @@ export async function execute(
       };
     }
     
+    // Use the Twilio number from the conversation context as the "from" number for SMS
+    // This should be passed in the toolData from the conversation context
+    const fromNumber = toolData?.twilioNumber;
+    
+    if (!fromNumber) {
+      throw new Error('Missing Twilio number in toolData. This should be set from the conversation context.');
+    }
+    
     const client = new Twilio(twilioAccountSid, twilioAuthToken);
     
     const result = await client.messages.create({
       body: message,
       to: to,
-      from: twilioConversationNumber
+      from: fromNumber
     });
     
     return {
@@ -255,6 +258,10 @@ export const sendToLiveAgentManifest: ToolManifest = {
     parameters: {
       type: 'object',
       properties: {
+        callSid: {
+          type: 'string',
+          description: 'Call SID from Twilio'
+        },
         reason: {
           type: 'string',
           description: 'Reason for handoff'
@@ -265,7 +272,7 @@ export const sendToLiveAgentManifest: ToolManifest = {
           enum: ['low', 'medium', 'high', 'urgent']
         }
       },
-      required: ['reason']
+      required: ['callSid', 'reason']
     }
   }
 };`,
@@ -478,6 +485,9 @@ export async function execute(
 ): Promise<ToolResult> {
   const { phone } = args as GetSegmentProfileParams;
   const { spaceProfile, tokenProfile } = getToolEnvData(toolData);
+  
+  // Ensure phone number has + prefix for Segment API
+  const formattedPhone = phone.startsWith('+') ? phone : \`+\${phone}\`;
 
   try {
     if (!spaceProfile) {
@@ -492,7 +502,7 @@ export async function execute(
       );
     }
 
-    const encodedPhone = encodeURIComponent(phone);
+    const encodedPhone = encodeURIComponent(formattedPhone);
     const URL = \`https://profiles.segment.com/v1/spaces/\${spaceProfile}/collections/users/profiles/phone:\${encodedPhone}/traits?limit=200\`;
     const response = await axios.get<{ traits: SegmentProfile['traits'] }>(
       URL,
@@ -511,7 +521,7 @@ export async function execute(
         sender: 'system:customer_profile',
         type: 'JSON',
         message: JSON.stringify({ customerData: customerData }),
-        phoneNumber: phone,
+        phoneNumber: formattedPhone,
       },
       process.env.WEBHOOK_URL
     ).catch((err) => console.error('Failed to send to webhook:', err));
