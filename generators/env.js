@@ -79,10 +79,7 @@ TWILIO_AUTH_TOKEN=
 # required: false (injected by deploy script or found in Twilio console)
 TWILIO_WORKFLOW_SID=
 
-# description: The phone number used to connect the person to the conversation relay service and text.
-# format: +1xxxxxxxxxxxxxx
-# required: false (injected by deploy script or found in Twilio console)
-TWILIO_CONVERSATION_NUMBER=
+
 
 # description: The messaging service to orchestrate RCS
 # format: +MGxxxxxxxxxxxxxx

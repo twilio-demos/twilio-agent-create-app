@@ -45,7 +45,7 @@ Create a static domain here: https://ngrok.com/blog-post/free-static-domains-ngr
 
 Copy your domain url
 
-Run `ngrok http 3001 --domain <your static url>.ngrok-free.app` replacing `<your static url>` with your own, leave that terminal running on the side. If it worked, you should see something like this:
+Run `ngrok http 3000 --domain <your static url>.ngrok-free.app` replacing `<your static url>` with your own, leave that terminal running on the side. If it worked, you should see something like this:
 
 <img width="588" height="373" alt="Screenshot 2025-08-06 at 9 40 07 PM" src="https://github.com/user-attachments/assets/daaff362-5908-448d-9b6b-e715de8c91be" />
 
