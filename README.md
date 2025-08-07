@@ -83,7 +83,9 @@ OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1
 ```
    
+## 4. Talk to your agent
 
+Call your live number and you should be able to talk to your agent
 
 ##  Features
 
