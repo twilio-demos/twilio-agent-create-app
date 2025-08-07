@@ -50,7 +50,7 @@ Go to https://console.twilio.com/us1/develop/phone-numbers/manage/incoming and p
 
 Find your active number, and select it
 
-<img width="754" height="145" alt="image" src="https://github.com/user-attachments/assets/d1d886c6-0a8f-4fe4-9544-ca72e36ce9b5" />
+<img width="754" height="345" alt="image" src="https://github.com/user-attachments/assets/d1d886c6-0a8f-4fe4-9544-ca72e36ce9b5" />
 
 
 Replace your "A call comes in" webhook like so:
