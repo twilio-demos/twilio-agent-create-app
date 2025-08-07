@@ -102,6 +102,18 @@ export const log = {
     const { label, phone, message, ...rest } = data;
     console.log(title(label, CC.magenta, phone), message, ...Object.values(rest));
   },
+  lightPurple: (data: LogData) => {
+    const { label, phone, message, ...rest } = data;
+    console.log(title(label, CC.lightPurple, phone), message, ...Object.values(rest));
+  },
+  brightCyan: (data: LogData) => {
+    const { label, phone, message, ...rest } = data;
+    console.log(title(label, CC.brightCyan, phone), message, ...Object.values(rest));
+  },
+  lightBlue: (data: LogData) => {
+    const { label, phone, message, ...rest } = data;
+    console.log(title(label, CC.lightBlue, phone), message, ...Object.values(rest));
+  },
   sms_received: (data: LogData) => {
     const { phone, message, ...rest } = data;
     console.log(title('sms_received', CC.green, phone), message, ...Object.values(rest));

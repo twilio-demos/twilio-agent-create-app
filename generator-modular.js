@@ -8,6 +8,7 @@ const { generateAppFile, generateLlmFile, generateVoicesFile } = require('./gene
 const { generateLibStructure } = require('./generators/lib');
 const { generateRoutes } = require('./generators/routes');
 const { generateTools } = require('./generators/tools');
+const { generateScriptsStructure } = require('./generators/scripts');
 const { generateReadme, generateGitignore } = require('./generators/docs');
 const { generateTsConfig, generateProcfile } = require('./generators/config');
 const { generatePackageJson } = require('./generators/package.json');
@@ -40,7 +41,11 @@ async function generateProject(config) {
     spinner.text = 'Generating tools...';
     await generateTools(projectPath, config);
     
-
+    // Generate scripts
+    if (config.scripts && config.scripts.length > 0) {
+      spinner.text = 'Generating Twilio setup scripts...';
+      await generateScriptsStructure(projectPath, config);
+    }
     
     // Generate docs
     spinner.text = 'Generating documentation...';

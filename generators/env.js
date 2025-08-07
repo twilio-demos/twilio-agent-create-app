@@ -9,9 +9,9 @@ async function generateEnvTemplate(projectPath) {
 OPENAI_API_KEY=
 
 # description: The model to use for OpenAI API calls
-# format: gpt-4o | gpt-4 | gpt-3.5-turbo
-# required: false (defaults to gpt-4o)
-OPENAI_MODEL=gpt-4o
+# format: gpt-4.1 | gpt-4o | gpt-4 | gpt-3.5-turbo
+# required: false (defaults to gpt-4.1)
+OPENAI_MODEL=gpt-4.1
 
 
 #---------------PORTS & URLS---------------:
@@ -42,7 +42,7 @@ LIVE_HOST_URL=
 
 # description: Service Name - used as a postfix for things like the serverless functions location
 # format: Example Service Name
-# required: false
+# required: true
 SERVICE_NAME=
 
 
@@ -79,7 +79,10 @@ TWILIO_AUTH_TOKEN=
 # required: false (injected by deploy script or found in Twilio console)
 TWILIO_WORKFLOW_SID=
 
-
+# description: The phone number used to connect the person to the conversation relay service and text.
+# format: +1xxxxxxxxxxxxxx
+# required: true (injected by deploy script or found in Twilio console)
+TWILIO_CONVERSATION_NUMBER=
 
 # description: The messaging service to orchestrate RCS
 # format: +MGxxxxxxxxxxxxxx

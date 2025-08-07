@@ -81,7 +81,7 @@ Next, we need to fill in the .env with our OpenAI API token. To generate an Open
 
 ```env
 OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o
+OPENAI_MODEL=gpt-4.1
 ```
    
 

@@ -30,15 +30,15 @@ import { languages } from '../lib/config/languages';
 
 const router = Router();
 
-router.get('/call', async (req, res) => {
+router.get('/call', async (req: any, res: any) => {
   await handleCallRequest(req, res);
 });
 
-router.post('/call', async (req, res) => {
+router.post('/call', async (req: any, res: any) => {
   await handleCallRequest(req, res);
 });
 
-async function handleCallRequest(req, res) {
+async function handleCallRequest(req: any, res: any) {
   const env = process.env.NODE_ENV;
   const isProduction = env === 'production';
 
@@ -438,7 +438,7 @@ import { routeNames } from './routeNames';
 
 const router = Router();
 
-router.post(\`/\${routeNames.sms}\`, async (req, res) => {
+router.post(\`/\${routeNames.sms}\`, async (req: any, res: any) => {
   try {
     const callType =
       req.body.To.includes('whatsapp:') || req.body.From.includes('whatsapp:')
@@ -517,7 +517,7 @@ import { twiml } from 'twilio';
 
 const router = Router();
 
-router.post('/live-agent', async (req, res) => {
+router.post('/live-agent', async (req: any, res: any) => {
   const { From: from, To: to, Direction: direction } = req.body;
   const customerNumber = direction?.includes('outbound') ? to : from;
 
@@ -549,7 +549,7 @@ export default router;`,
     outboundCall: `import { Router } from 'express';
 const router = Router();
 
-router.get('/outbound-call', async (req, res) => {
+router.get('/outbound-call', async (req: any, res: any) => {
   try {
     res.json({ message: 'Outbound call endpoint' });
   } catch (error: any) {
@@ -565,7 +565,7 @@ import { activeConversations, recentActivity } from './conversationRelay';
 
 const router = Router();
 
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (req: any, res: any) => {
   try {
     const stats = {
       activeConversations: activeConversations.size,
@@ -584,7 +584,7 @@ export default router;`,
     activeNumbers: `import { Router } from 'express';
 const router = Router();
 
-router.get('/active-numbers', async (req, res) => {
+router.get('/active-numbers', async (req: any, res: any) => {
   try {
     res.json({ message: 'Active numbers endpoint' });
   } catch (error: any) {
@@ -598,7 +598,7 @@ export default router;`,
     outboundMessage: `import { Router } from 'express';
 const router = Router();
 
-router.get('/outbound-message', async (req, res) => {
+router.get('/outbound-message', async (req: any, res: any) => {
   try {
     res.json({ message: 'Outbound message endpoint' });
   } catch (error: any) {
@@ -612,7 +612,7 @@ export default router;`,
     liveNumbers: `import { Router } from 'express';
 const router = Router();
 
-router.get('/live-numbers', async (req, res) => {
+router.get('/live-numbers', async (req: any, res: any) => {
   try {
     res.json({ message: 'Live numbers endpoint' });
   } catch (error: any) {

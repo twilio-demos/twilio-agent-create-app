@@ -54,6 +54,7 @@ async function getProjectConfig(projectName, options) {
   if (options.yes) {
     // Use defaults - include most common tools
     answers.toolCalls = ['sendText', 'sendRCS', 'sendEmail', 'getSegmentProfile', 'getSegmentEvents', 'updateSegmentProfile', 'postSegmentTrack', 'getAirtableData', 'upsertAirtableData', 'sendToLiveAgent', 'switchLanguage'];
+    answers.scripts = ['assignPhoneNumber', 'createTaskRouter', 'createMessagingService', 'createConversationalIntelligence'];
     answers.packageManager = 'npm';
     answers.git = true;
   } else {
@@ -79,6 +80,21 @@ async function getProjectConfig(projectName, options) {
       }
     ]);
     answers.toolCalls = toolCalls;
+
+    const { scripts } = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'scripts',
+        message: 'Which Twilio setup scripts would you like to include?',
+        choices: [
+          { name: 'Assign Phone Number (Default)', value: 'assignPhoneNumber', checked: true },
+          { name: 'Create Task Router Service', value: 'createTaskRouter' },
+          { name: 'Create Messaging Service', value: 'createMessagingService' },
+          { name: 'Create Conversational Intelligence Service', value: 'createConversationalIntelligence' }
+        ]
+      }
+    ]);
+    answers.scripts = scripts;
 
     const { packageManager } = await inquirer.prompt([
       {

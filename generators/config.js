@@ -9,7 +9,7 @@ async function generateTsConfig(projectPath) {
       types: ["node"],
       module: "commonjs",
       outDir: "./dist",
-      rootDir: "./src",
+      rootDir: "./",
       strict: true,
       esModuleInterop: true,
       skipLibCheck: true,
@@ -33,7 +33,7 @@ async function generateTsConfig(projectPath) {
         "@/*": ["src/*"]
       }
     },
-    include: ["src/**/*"],
+    include: ["src/**/*", "scripts/**/*"],
     exclude: ["node_modules", "dist", "**/*.test.ts"]
   };
 

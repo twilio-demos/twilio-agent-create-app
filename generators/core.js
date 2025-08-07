@@ -132,7 +132,7 @@ export class LLMService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    this.model = process.env.OPENAI_MODEL || 'gpt-4o';
+    this.model = process.env.OPENAI_MODEL || 'gpt-4.1';
   }
 
   public async setCallContext(from: string, to: string, direction: string, callSid: string) {

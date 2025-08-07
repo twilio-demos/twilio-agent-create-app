@@ -86,6 +86,7 @@ ${config.toolCalls.map(tool => '- ' + tool.replace(/([A-Z])/g, ' $1').toLowerCas
 - \`${config.packageManager} run ngrok:install\` - Install ngrok globally
 - \`${config.packageManager} run ngrok:start\` - Start ngrok tunnel
 - \`${config.packageManager} run dev:with-ngrok\` - Start both ngrok and dev server
+${config.scripts && config.scripts.length > 0 ? `- \`${config.packageManager} run twilio:init\` - Run Twilio setup scripts to configure services` : ''}
 
 ## Configuration
 
@@ -107,6 +108,28 @@ To add custom tools:
 1. Create a new directory in \`src/tools/\`
 2. Add \`manifest.ts\` and \`executor.ts\`
 3. Update \`src/tools/manifest.ts\` and \`src/tools/executors.ts\`
+
+${config.scripts && config.scripts.length > 0 ? `### Twilio Setup Scripts
+
+This project includes Twilio setup scripts in \`scripts/twilioInit/\`:
+
+- **assignPhoneNumber.ts** - Assigns a phone number and configures webhooks
+- **createTaskRouter.ts** - Creates TaskRouter workspace, queue, and workflow
+- **createMessagingService.ts** - Creates messaging service and attaches phone number
+- **createConversationalIntelligence.ts** - Creates conversational intelligence service with custom operators
+
+To run the setup scripts:
+\`\`\`bash
+${config.packageManager} run twilio:init
+\`\`\`
+
+Make sure your \`.env\` file contains:
+- \`TWILIO_ACCOUNT_SID\`
+- \`TWILIO_AUTH_TOKEN\`
+- \`SERVICE_NAME\` (for naming services)
+- \`NGROK_URL\` or \`LIVE_HOST_URL\` (for webhook URLs)
+
+` : ''}
 
 ## Deployment
 
