@@ -75,10 +75,6 @@ Go to
 
    TWILIO_AUTH_TOKEN=your_auth_token
    ```
-
-   Swap out call webhook url for your console’s phone configuration to use your ngrok custom url:
-
-
  
 
 Next, we need to fill in the .env with our OpenAI API token. To generate an OpenAPI API KEY. Go to https://platform.openai.com/api-keys -> login -> hit `+ Create new secret key` and copy the api key into your `.env` file
