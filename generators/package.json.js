@@ -13,8 +13,6 @@ async function generatePackageJson(projectPath, config) {
       build: "tsc",
       test: "echo \"Error: no test specified\" && exit 1",
       "ngrok:install": "npm install -g ngrok",
-      "ngrok:start": "ngrok http 3000",
-      "dev:with-ngrok": "npm run ngrok:start & npm run dev",
       "twilio:init": "ts-node scripts/twilioInit/index.ts"
     },
     dependencies: {

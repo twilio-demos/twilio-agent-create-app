@@ -84,13 +84,17 @@ async function generateProject(config) {
     console.log(chalk.white(`  cd ${config.projectName}`));
     console.log(chalk.white('  npm install'));
     console.log(chalk.white('  cp .env.example .env'));
-    console.log(chalk.white('  # Edit .env with your configuration'));
+    console.log(chalk.white('  # Edit .env with your configuration before running npm run twilio:init'));
+    console.log(chalk.white('  # You must have a Twilio Account SID, Auth Token, and SERVICE_NAME '));
+    console.log(chalk.white('  npm run twilio:init'));
     console.log(chalk.white('  npm run dev'));
     
     console.log('\n' + chalk.yellow('Important:'));
     console.log(chalk.white('  - Configure your .env file with your API keys'));
     console.log(chalk.white('  - Set up your Twilio webhook URLs'));
     console.log(chalk.white('  - Configure your ngrok tunnel for local development'));
+    console.log(chalk.white('  - Ngrok must be running before running npm run dev'));
+    console.log(chalk.white('  ****************************************************'));
     
   } catch (error) {
     spinner.fail(chalk.red('Failed to create project'));
