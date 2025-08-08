@@ -1,5 +1,7 @@
 # create-twilio-agent
 
+## Architechture
+<img width="693" height="534" alt="Screenshot 2025-08-08 at 12 16 10 PM" src="https://github.com/user-attachments/assets/0232ade0-e6ca-4b5f-8020-508d86d4e8ce" />
 
 ## How to run
 
