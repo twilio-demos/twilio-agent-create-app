@@ -188,6 +188,69 @@ export async function sendToWebhook(
 
   await fs.writeFile(path.join(libDir, 'utils', 'webhook.ts'), webhookTemplate);
   
+  // Generate trackMessage utility
+  const trackMessageTemplate = `// External npm packages
+import axios from 'axios';
+
+// Local imports
+import { log } from './logger';
+
+export type TrackMessageProps = {
+  userId: string;
+  callType: 'sms' | 'whatsapp' | 'rcs';
+  phoneNumber: string;
+  label: string;
+  event: string;
+  direction: 'inbound' | 'outbound';
+  messageSid?: string;
+};
+
+export const trackMessage = async ({
+  userId,
+  callType,
+  phoneNumber,
+  label,
+  direction,
+  event,
+  messageSid,
+}: TrackMessageProps) => {
+  if (process.env.SEGMENT_WRITE_KEY) {
+    try {
+      await axios.post(
+        'https://api.segment.io/v1/track',
+        {
+          userId,
+          event,
+          properties: {
+            type: callType,
+            direction,
+            phoneNumber,
+            messageSid,
+            timestamp: new Date().toISOString(),
+          },
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization:
+              'Basic ' +
+              Buffer.from((process.env.SEGMENT_WRITE_KEY || '') + ':').toString('base64'),
+          },
+        }
+      );
+    } catch (trackError) {
+      log.error({
+        label,
+        message: 'Failed to track ' + direction + ' ' + label,
+        data: trackError,
+      });
+    }
+  }
+};
+`;
+
+  await fs.writeFile(path.join(libDir, 'utils', 'trackMessage.ts'), trackMessageTemplate);
+  
   // Generate getTemplateData utility
   const getTemplateDataTemplate = `import fs from 'fs-extra';
 import path from 'path';
@@ -619,6 +682,9 @@ You are a helpful voice agent for Twilio ConversationRelay. Your role is to assi
 - Transfer to live agents
 - Switch languages if requested
 - And more depending on configured tools
+
+## RCS Configuration
+
 
 ## Example Interactions
 

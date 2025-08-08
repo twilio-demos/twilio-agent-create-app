@@ -73,7 +73,8 @@ export const sendTextManifest: ToolManifest = {
   }
 };`,
       executor: `import { Twilio } from 'twilio';
-import { ToolResult, LocalTemplateData } from '../../lib/types';
+ import { ToolResult, LocalTemplateData } from '../../lib/types';
+ import { trackMessage } from '../../lib/utils/trackMessage';
 
 export async function execute(
   args: { to: string; message: string },
@@ -117,6 +118,18 @@ export async function execute(
       from: fromNumber
     });
     
+    // Track outbound message
+    const callType = to.includes('whatsapp:') || (fromNumber && fromNumber.includes('whatsapp:')) ? 'whatsapp' : 'sms';
+    trackMessage({
+      userId: to,
+      callType,
+      phoneNumber: to,
+      label: 'outboundMessage',
+      direction: 'outbound',
+      event: 'Text Interaction',
+      messageSid: result.sid,
+    });
+
     return {
       success: true,
       data: {
@@ -159,10 +172,11 @@ export const sendRCSManifest: ToolManifest = {
   }
 };`,
       executor: `// External npm packages
-import twilio from 'twilio';
+ import twilio from 'twilio';
 
-// Local imports
-import { ToolResult, LocalTemplateData } from '../../lib/types';
+ // Local imports
+ import { ToolResult, LocalTemplateData } from '../../lib/types';
+ import { trackMessage } from '../../lib/utils/trackMessage';
 
 export type SendRCSParams = {
   to: string;
@@ -229,6 +243,17 @@ export async function execute(
         ...contentVariables,
         content: contentVariables?.content || content,
       }),
+    });
+    
+    // Track outbound RCS
+    await trackMessage({
+      userId: to,
+      callType: 'rcs',
+      phoneNumber: to,
+      label: 'outboundMessage',
+      direction: 'outbound',
+      event: 'Text Interaction',
+      messageSid: messageData.sid,
     });
     return {
       success: true,
