@@ -1,16 +1,22 @@
 # create-twilio-agent
 
-## Architechture
+
+## Quick Start
+
+```bash
+npx create-twilio-agent my-agent
+```
+This will create a new Twilio agent project in the my-agent directory.
+
+## Architecture
 <img width="693" height="534" alt="Screenshot 2025-08-08 at 12 16 10 PM" src="https://github.com/user-attachments/assets/0232ade0-e6ca-4b5f-8020-508d86d4e8ce" />
-
-## How to run
-
 
 
 ## 📋 Prerequisites
 
 - Node.js 18+ 
 - Twilio Account
+- OpenAI API
 
 
 ## 🛠️ Setup
@@ -18,22 +24,35 @@
 ## 1. Generate Your Agent
 
 ```bash
-# Initialize the repo
-npx create-twilio-agent
+npx create-twilio-agent my-agent
 ```
 
 ## 2. Configure Environment Variables
 
 ```bash
 # Navigate to your generated agent
- cd <project name>
+ cd my-agent
 
 # Rename the template to .env:
 cp .env.example .env
+# Edit .env with your configuration before running npm run twilio:init
+# You must have a Twilio Account SID, Auth Token, OpenAI Key, NGROK_URL, and SERVICE_NAME
+npm run twilio:init
+npm run dev
 ```
 
+---
 
-## 3. Fill In Your Environment Variables:
+## 3b. Twilio Init
+
+- `npm run twilio:init` will purchase a phone number for your account if `.env` does **NOT** contain `TWILIO_CONVERSATION_NUMBER`.
+- The init process will:
+  - Bind the phone number to your NGROK URL
+  - Initiate all required fields to get started
+
+---
+
+## 4. Fill In Your Environment Variables:
 
 ### Setup Ngrok
 
