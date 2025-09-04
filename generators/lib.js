@@ -4,14 +4,14 @@ const path = require('path');
 async function generateLibStructure(projectPath, config) {
   const libDir = path.join(projectPath, 'src', 'lib');
   await fs.ensureDir(libDir);
-  
+
   // Create lib subdirectories
   await fs.ensureDir(path.join(libDir, 'utils'));
   await fs.ensureDir(path.join(libDir, 'utils', 'llm'));
   await fs.ensureDir(path.join(libDir, 'types'));
   await fs.ensureDir(path.join(libDir, 'config'));
   await fs.ensureDir(path.join(libDir, 'prompts'));
-  
+
   // Generate logger
   const loggerTemplate = `import winston from 'winston';
 
@@ -134,7 +134,7 @@ export const log = {
 `;
 
   await fs.writeFile(path.join(libDir, 'utils', 'logger.ts'), loggerTemplate);
-  
+
   // Generate webhook utility
   const webhookTemplate = `import axios from 'axios';
 import { log } from './logger';
@@ -187,7 +187,7 @@ export async function sendToWebhook(
 `;
 
   await fs.writeFile(path.join(libDir, 'utils', 'webhook.ts'), webhookTemplate);
-  
+
   // Generate trackMessage utility
   const trackMessageTemplate = `// External npm packages
 import axios from 'axios';
@@ -249,8 +249,11 @@ export const trackMessage = async ({
 };
 `;
 
-  await fs.writeFile(path.join(libDir, 'utils', 'trackMessage.ts'), trackMessageTemplate);
-  
+  await fs.writeFile(
+    path.join(libDir, 'utils', 'trackMessage.ts'),
+    trackMessageTemplate
+  );
+
   // Generate getTemplateData utility
   const getTemplateDataTemplate = `import fs from 'fs-extra';
 import path from 'path';
@@ -306,6 +309,7 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
       segmentWorkspace: process.env.SEGMENT_WORKSPACE,
       airtableApiKey: process.env.AIRTABLE_API_KEY,
       airtableBaseId: process.env.AIRTABLE_BASE_ID,
+      airtableBaseName: process.env.AIRTABLE_BASE_NAME,
       // SendGrid variables (corrected names)
       sendGridApiKey: process.env.SENDGRID_API_KEY,
       sendGridDomain: process.env.SENDGRID_DOMAIN,
@@ -323,8 +327,11 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
 }
 `;
 
-  await fs.writeFile(path.join(libDir, 'utils', 'llm', 'getTemplateData.ts'), getTemplateDataTemplate);
-  
+  await fs.writeFile(
+    path.join(libDir, 'utils', 'llm', 'getTemplateData.ts'),
+    getTemplateDataTemplate
+  );
+
   // Generate types
   const typesTemplate = `import { EventEmitter } from 'node:events';
 
@@ -407,7 +414,7 @@ export interface ToolExecutorParams {
 `;
 
   await fs.writeFile(path.join(libDir, 'types', 'index.ts'), typesTemplate);
-  
+
   // Generate languages config
   const languagesTemplate = `export type Language = {
   value: string;
@@ -657,8 +664,11 @@ export function getLanguageTwilioConfig(value: string) {
 }
 `;
 
-  await fs.writeFile(path.join(libDir, 'config', 'languages.ts'), languagesTemplate);
-  
+  await fs.writeFile(
+    path.join(libDir, 'config', 'languages.ts'),
+    languagesTemplate
+  );
+
   // Generate instructions.md
   const instructionsTemplate = `# Agent Instructions
 
@@ -697,8 +707,11 @@ You are a helpful voice agent for Twilio ConversationRelay. Your role is to assi
 Remember to always be helpful and use the tools available to provide the best possible service.
 `;
 
-  await fs.writeFile(path.join(libDir, 'prompts', 'instructions.md'), instructionsTemplate);
-  
+  await fs.writeFile(
+    path.join(libDir, 'prompts', 'instructions.md'),
+    instructionsTemplate
+  );
+
   // Generate context.md
   const contextTemplate = `# Agent Context
 
@@ -726,7 +739,10 @@ This agent is powered by Twilio ConversationRelay and is designed to handle voic
 - RESTful API endpoints for various functions
 `;
 
-  await fs.writeFile(path.join(libDir, 'prompts', 'context.md'), contextTemplate);
+  await fs.writeFile(
+    path.join(libDir, 'prompts', 'context.md'),
+    contextTemplate
+  );
 }
 
-module.exports = { generateLibStructure }; 
+module.exports = { generateLibStructure };
