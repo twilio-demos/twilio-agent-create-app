@@ -2,12 +2,29 @@ const fs = require('fs-extra');
 const path = require('path');
 
 async function generateEnvTemplate(projectPath) {
-  const envTemplate = `#---------------OPEN AI---------------: 
+  const envTemplate = `#---------------DEV REQUIRED FIELDS---------------: 
+# description: The Account SID for your Twilio account
+# format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: true
+TWILIO_ACCOUNT_SID=
+
+# description: The Account Auth Token for your Twilio account
+# format: hashed_value
+# required: true
+TWILIO_AUTH_TOKEN=
+
 # description: The api key used in open ai for accessing chatGPT
 # format: hashed_value
 # required: true
 OPENAI_API_KEY=
 
+# description: The ngrok domain to use for the Express app and Twilio serverless functions (via proxy)
+# format: domain.app
+# required: true
+NGROK_URL=
+
+
+#---------------OPEN AI---------------:
 # description: The model to use for OpenAI API calls
 # format: gpt-4.1 | gpt-4o | gpt-4 | gpt-3.5-turbo
 # required: false (defaults to gpt-4.1)
@@ -25,11 +42,6 @@ NODE_ENV=development
 # required: false
 PORT=3000
 
-# description: The ngrok domain to use for the Express app and Twilio serverless functions (via proxy)
-# format: domain.app
-# required: true
-NGROK_URL=
-
 # description: The api key used in sending payloads to a 3rd party webhook
 # format: https://domain.com
 # required: false
@@ -40,27 +52,17 @@ WEBHOOK_URL=
 # required: true
 LIVE_HOST_URL=
 
-# description: Service Name - used as a postfix for things like the serverless functions location
-# format: Example Service Name
-# required: true
-SERVICE_NAME=
-
 
 #---------------TWILIO---------------: 
-# description: The Account SID for your Twilio account
-# format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# required: true
-TWILIO_ACCOUNT_SID=
-
-# description: The Account Auth Token for your Twilio account
-# format: hashed_value
-# required: true
-TWILIO_AUTH_TOKEN=
-
 # description: The Twilio SID used for orchestrating the initial Flex logic
 # format: WWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # required: false (injected by deploy script or found in Twilio console)
 TWILIO_WORKFLOW_SID=
+
+# description: Service Name - used as a postfix for things like the serverless functions location
+# format: Example Service Name
+# required: true
+SERVICE_NAME=MYFIRSTAGENT
 
 # description: The phone number used to connect the person to the conversation relay service and text.
 # format: +1xxxxxxxxxxxxxx
