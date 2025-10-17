@@ -305,6 +305,7 @@ export async function getLocalTemplateData(): Promise<LocalTemplateData> {
       twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
       twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
       twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER,
+      twilioIntelligenceServiceSid: process.env.TWILIO_CONVERSATIONAL_INTELLIGENCE_SID,
       segmentWriteKey: process.env.SEGMENT_WRITE_KEY,
       segmentWorkspace: process.env.SEGMENT_WORKSPACE,
       airtableApiKey: process.env.AIRTABLE_API_KEY,
