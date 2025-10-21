@@ -32,10 +32,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/twilio-demos/create-twilio-agent.git"
+    "url": "https://github.com/twilio-demos/twilio-agent-create-app.git"
   },
   "bugs": {
-    "url": "https://github.com/twilio-demos/create-twilio-agent/issues"
+    "url": "https://github.com/twilio-demos/twilio-agent-create-app/issues"
   },
-  "homepage": "https://github.com/twilio-demos/create-twilio-agent#readme"
+  "homepage": "https://github.com/twilio-demos/twilio-agent-create-app#readme"
 }
