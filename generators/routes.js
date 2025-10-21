@@ -121,6 +121,7 @@ async function handleCallRequest(req: any, res: any) {
     speechModel: 'nova-2-general', // Speech model for transcription
     dtmfDetection: true, // DTMF detection enabled
     debug: 'true', // Debugging enabled for troubleshooting (string type)
+    intelligenceService: process.env.TWILIO_CONVERSATIONAL_INTELLIGENCE_SID, // TWILIO_CONVERSATIONAL_INTELLIGENCE_SID
   };
 
   
