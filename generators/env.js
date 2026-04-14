@@ -53,7 +53,7 @@ WEBHOOK_URL=
 LIVE_HOST_URL=
 
 
-#---------------TWILIO---------------: 
+#---------------TWILIO---------------:
 # description: The Twilio SID used for orchestrating the initial Flex logic
 # format: WWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # required: false (injected by deploy script or found in Twilio console)
@@ -67,7 +67,22 @@ SERVICE_NAME=MYFIRSTAGENT
 # description: The phone number used to connect the person to the conversation relay service and text.
 # format: +1xxxxxxxxxxxxxx
 # required: true (injected by deploy script or found in Twilio console)
-TWILIO_CONVERSATION_NUMBER=
+TWILIO_PHONE_NUMBER=
+
+# description: Twilio API Key (starts with SK) — required by TAC for Maestro API auth
+# format: SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: true for TAC
+TWILIO_API_KEY=
+
+# description: Twilio API Token (secret for the API Key above)
+# format: hashed_value
+# required: true for TAC
+TWILIO_API_TOKEN=
+
+# description: Twilio Conversation Configuration (Service) SID — the Maestro service TAC sends/receives through
+# format: ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: true for TAC
+CONVERSATION_SERVICE_ID=
 
 # description: The messaging service to orchestrate RCS
 # format: +MGxxxxxxxxxxxxxx

@@ -4,7 +4,7 @@ const chalk = require('chalk');
 const ora = require('ora');
 
 // Import modular generators
-const { generateAppFile, generateLlmFile, generateVoicesFile } = require('./generators/core');
+const { generateTacFile, generateAppFile, generateLlmFile, generateVoicesFile } = require('./generators/core');
 const { generateLibStructure } = require('./generators/lib');
 const { generateRoutes } = require('./generators/routes');
 const { generateTools } = require('./generators/tools');
@@ -25,6 +25,7 @@ async function generateProject(config) {
   try {
     // Generate core files
     spinner.text = 'Generating core files...';
+    await generateTacFile(projectPath);
     await generateAppFile(projectPath, config);
     await generateLlmFile(projectPath, config);
     await generateVoicesFile(projectPath);

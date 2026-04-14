@@ -4,10 +4,11 @@ const path = require('path');
 async function generateTsConfig(projectPath) {
   const tsConfig = {
     compilerOptions: {
-      target: "ES2020",
-      lib: ["ES2020", "DOM"],
+      target: "ES2022",
+      lib: ["ES2022"],
       types: ["node"],
-      module: "commonjs",
+      module: "ESNext",
+      moduleResolution: "Bundler",
       outDir: "./dist",
       rootDir: "./",
       strict: true,
@@ -27,7 +28,6 @@ async function generateTsConfig(projectPath) {
       exactOptionalPropertyTypes: false,
       noFallthroughCasesInSwitch: true,
       noUncheckedIndexedAccess: false,
-      moduleResolution: "node",
       baseUrl: ".",
       paths: {
         "@/*": ["src/*"]

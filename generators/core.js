@@ -1,71 +1,202 @@
 const fs = require('fs-extra');
 const path = require('path');
 
+async function generateTacFile(projectPath) {
+  const srcDir = path.join(projectPath, 'src');
+  await fs.ensureDir(srcDir);
+
+  const tacTemplate = `import { TAC, TACConfig, VoiceChannel, SMSChannel } from 'twilio-agent-connect';
+
+// Initialize TAC with config loaded from environment variables.
+// Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_API_KEY,
+// TWILIO_API_TOKEN, TWILIO_PHONE_NUMBER, CONVERSATION_SERVICE_ID
+export const tac = new TAC({ config: TACConfig.fromEnv() });
+
+export const voiceChannel = new VoiceChannel(tac);
+export const smsChannel = new SMSChannel(tac);
+
+tac.registerChannel(voiceChannel);
+tac.registerChannel(smsChannel);
+
+// Track active voice connections for the /stats endpoint.
+let activeVoiceCount = 0;
+voiceChannel.on('webSocketConnected', () => { activeVoiceCount++; });
+voiceChannel.on('webSocketDisconnected', () => { activeVoiceCount--; });
+export const getActiveVoiceCount = () => activeVoiceCount;
+`;
+
+  await fs.writeFile(path.join(srcDir, 'tac.ts'), tacTemplate);
+}
+
 async function generateAppFile(projectPath, config) {
   const srcDir = path.join(projectPath, 'src');
   await fs.ensureDir(srcDir);
-  
+
   const appTemplate = `import 'dotenv/config';
 import express from 'express';
-import ExpressWs from 'express-ws';
+import expressWs from 'express-ws';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import WebSocket from 'ws';
+
+// TAC
+import { tac, voiceChannel, smsChannel } from './tac.js';
 
 // Local imports
-import { log } from './lib/utils/logger';
-import { setupConversationRelayRoute } from './routes/conversationRelay';
-import callRouter from './routes/call';
-import smsRouter from './routes/sms';
-import liveAgentRouter from './routes/liveAgent';
-import outboundCallRouter from './routes/outboundCall';
-import statsRouter from './routes/stats';
-import activeNumbersRouter from './routes/activeNumbers';
-import outboundMessageRouter from './routes/outboundMessage';
-import liveNumbersRouter from './routes/liveNumbers';
+import { log } from './lib/utils/logger.js';
+import { LLMService } from './llm.js';
+import { getLocalTemplateData } from './lib/utils/llm/getTemplateData.js';
+
+// Routes
+import callRouter from './routes/call.js';
+import liveAgentRouter from './routes/liveAgent.js';
+import outboundCallRouter from './routes/outboundCall.js';
+import statsRouter from './routes/stats.js';
+import activeNumbersRouter from './routes/activeNumbers.js';
+import outboundMessageRouter from './routes/outboundMessage.js';
+import liveNumbersRouter from './routes/liveNumbers.js';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-const { app } = ExpressWs(express());
+// ── LLM session management ──────────────────────────────────────────────────
+// One LLMService per active conversation, keyed by TAC conversationId.
+const llmSessions = new Map<string, LLMService>();
 
-// Middleware
+// Voice: TAC fires 'setup' when ConversationRelay WebSocket connects and
+// sends its first message. Create the LLMService here so it's ready before
+// the first 'prompt' arrives via tac.onMessageReady().
+voiceChannel.on('setup', async ({ conversationId, from, to, callSid }: {
+  conversationId: string;
+  from: string;
+  to: string;
+  callSid: string;
+  profileId?: string;
+  customParameters?: Record<string, unknown>;
+}) => {
+  const templateData = await getLocalTemplateData();
+  const llm = new LLMService(from, templateData);
+
+  // Stream text tokens directly through the TAC-managed WebSocket.
+  llm.on('text', (chunk: string, isFinal: boolean) => {
+    const ws = voiceChannel.getWebsocket(conversationId as any);
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'text', token: chunk, last: isFinal }));
+    }
+  });
+
+  llm.on('handoff', (data: Record<string, unknown>) => {
+    const ws = voiceChannel.getWebsocket(conversationId as any);
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'end', handoffData: JSON.stringify(data) }));
+    }
+  });
+
+  llm.on('language', (data: { ttsLanguage: string; transcriptionLanguage: string }) => {
+    const ws = voiceChannel.getWebsocket(conversationId as any);
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'language',
+        ttsLanguage: data.ttsLanguage,
+        transcriptionLanguage: data.transcriptionLanguage,
+      }));
+    }
+  });
+
+  // 'inbound' covers the standard case. TAC doesn't surface call direction in
+  // the setup callback yet — update when it does.
+  await llm.setCallContext(from, to, 'inbound', callSid);
+  await llm.notifyInitialCallParams();
+  await llm.run(); // initial greeting
+
+  llmSessions.set(conversationId, llm);
+});
+
+// All channels: fired every time a user message is ready.
+tac.onMessageReady(async ({ conversationId, message, author, channel }) => {
+  if (channel === 'voice') {
+    const llm = llmSessions.get(conversationId as string);
+    if (!llm) {
+      log.error({ label: 'tac', message: \`No LLM session for voice conversation \${conversationId}\` });
+      return;
+    }
+    llm.addMessage({ role: 'user', content: message });
+    await llm.run();
+
+  } else if (channel === 'sms') {
+    let llm = llmSessions.get(conversationId as string);
+
+    if (!llm) {
+      // First message in this SMS conversation — bootstrap the LLM session.
+      const templateData = await getLocalTemplateData();
+      llm = new LLMService(author, templateData);
+      llm.isVoiceCall = false;
+
+      // For SMS, wait for the full response then send it as a single message.
+      llm.on('text', async (_chunk: string, isFinal: boolean, fullText?: string) => {
+        if (isFinal && fullText) {
+          await smsChannel.sendResponse(conversationId as any, fullText).catch((err: Error) =>
+            log.error({ label: 'sms', message: 'Failed to send SMS response', data: err })
+          );
+        }
+      });
+
+      await llm.notifyInitialCallParams();
+      llmSessions.set(conversationId as string, llm);
+    }
+
+    llm.addMessage({ role: 'user', content: message });
+    await llm.run();
+  }
+});
+
+// Cancel in-flight LLM generation when the caller interrupts.
+tac.onInterrupt(({ conversationId }) => {
+  llmSessions.get(conversationId as string)?.cancel();
+});
+
+// Clean up LLM state when a conversation ends.
+tac.onConversationEnded(({ session }) => {
+  llmSessions.delete(session.conversationId as string);
+});
+
+// ── Express setup ───────────────────────────────────────────────────────────
+const { app } = expressWs(express());
+
 app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 
-// Configure CORS based on environment
 if (process.env.NODE_ENV !== 'production') {
-  // In development, allow localhost:3000 to talk to localhost:3001
-  app.use(
-    cors({
-      origin: 'http://localhost:3000',
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
+  app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 } else {
-  // In production, allow your frontend domain
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-  app.use(
-    cors({
-      origin: allowedOrigins,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? [];
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
 }
 
 app.use(express.urlencoded({ extended: true })).use(express.json());
 
-// Set up WebSocket route for conversation relay
-setupConversationRelayRoute(app);
+// TAC handles all WebSocket state — this route just hands the socket over.
+app.ws('/conversation-relay', (ws) => {
+  voiceChannel.handleWebSocketConnection(ws as unknown as WebSocket);
+});
 
-// Set up HTTP routes
+// SMS: TAC's SMSChannel expects Maestro (Conversation Orchestrator) webhooks,
+// not raw Twilio SMS webhooks. Configure your Twilio number to use a
+// ConversationConfiguration with capture rules pointing here.
+app.post('/text', async (req: any, res: any) => {
+  try {
+    const idempotencyToken = req.headers['i-twilio-idempotency-token'] as string | undefined;
+    await smsChannel.processWebhook(req.body, idempotencyToken);
+  } catch (err) {
+    log.error({ label: 'sms', message: 'Webhook error', data: err });
+  }
+  res.type('text/xml').send('<Response/>');
+});
+
+// Custom routes (not covered by TAC)
 app.use('/', callRouter);
-app.use('/', smsRouter);
 app.use('/', liveAgentRouter);
 app.use('/', outboundCallRouter);
 app.use('/', statsRouter);
@@ -73,16 +204,12 @@ app.use('/', activeNumbersRouter);
 app.use('/', outboundMessageRouter);
 app.use('/', liveNumbersRouter);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req: any, res: any) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {
-  log.info({
-    label: 'server',
-    message: \`Server listening on port \${PORT}\`,
-  });
+  log.info({ label: 'server', message: \`Server listening on port \${PORT}\` });
 });
 `;
 
@@ -239,6 +366,14 @@ export class LLMService {
     }
     return this;
   };
+
+  // Abort the current in-flight LLM request (called on voice interrupt).
+  public cancel(): void {
+    if (this.currentRequest) {
+      this.currentRequest.abort();
+      this.currentRequest = null;
+    }
+  }
 
   // Process conversation and get response
   run = async (isUserPrompt: boolean = true) => {
@@ -539,4 +674,4 @@ export type Language = keyof typeof voices;
   await fs.writeFile(path.join(srcDir, 'voices.ts'), voicesTemplate);
 }
 
-module.exports = { generateAppFile, generateLlmFile, generateVoicesFile }; 
+module.exports = { generateTacFile, generateAppFile, generateLlmFile, generateVoicesFile }; 

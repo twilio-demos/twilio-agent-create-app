@@ -257,10 +257,11 @@ export const trackMessage = async ({
   // Generate getTemplateData utility
   const getTemplateDataTemplate = `import fs from 'fs-extra';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { LocalTemplateData } from '../../types';
 
 export async function getLocalTemplateData(): Promise<LocalTemplateData> {
-  // Look in the src directory, not the dist directory
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const rootDir = path.resolve(__dirname, '../../../../');
   
   let instructions = '';

@@ -5,17 +5,20 @@ async function generatePackageJson(projectPath, config) {
   const packageJson = {
     name: config.projectName,
     version: "1.0.0",
-    description: "A Twilio ConversationRelay agent created with create-twilio-agent",
+    description: "A Twilio Agent Connect app created with create-twilio-agent",
+    type: "module",
     main: "dist/app.js",
     scripts: {
       start: "node dist/app.js",
-      dev: "NODE_ENV=development ts-node src/app.ts",
+      dev: "NODE_ENV=development tsx src/app.ts",
       build: "tsc",
       test: "echo \"Error: no test specified\" && exit 1",
       "ngrok:install": "npm install -g ngrok",
-      "twilio:init": "ts-node scripts/twilioInit/index.ts"
+      "twilio:init": "tsx scripts/twilioInit/index.ts"
     },
     dependencies: {
+      // TAC is not yet on npm — replace with "twilio-agent-connect": "^x.x.x" when published
+      "twilio-agent-connect": "file:../../twilio-agent-connect-typescript",
       "twilio": "^5.6.0",
       "@twilio/runtime-handler": "^2.1.0",
       "express": "^4.18.2",
@@ -42,8 +45,8 @@ async function generatePackageJson(projectPath, config) {
       "@types/cors": "^2.8.14",
       "@types/morgan": "^1.9.5",
       "@types/compression": "^1.7.3",
-      "typescript": "^5.1.6",
-      "ts-node": "^10.9.1"
+      "typescript": "^5.7.2",
+      "tsx": "^4.19.2"
     },
     keywords: ["twilio", "agent", "ai", "conversationrelay"],
     author: "",

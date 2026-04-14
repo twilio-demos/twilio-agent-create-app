@@ -186,7 +186,7 @@ export async function assignPhoneNumber(client: any) {
     smsUrl,
   };
 
-  let conversationNumber = process.env.TWILIO_CONVERSATION_NUMBER;
+  let conversationNumber = process.env.TWILIO_PHONE_NUMBER;
 
   try {
     // Check if we need to purchase a new number or use the existing one
@@ -194,7 +194,7 @@ export async function assignPhoneNumber(client: any) {
       log.info({
         label: 'assignPhoneNumber',
         message:
-          'No TWILIO_CONVERSATION_NUMBER found. Searching for toll-free number...',
+          'No TWILIO_PHONE_NUMBER found. Searching for toll-free number...',
       });
 
       // Get available toll-free numbers and purchase one if available
@@ -274,7 +274,7 @@ export async function assignPhoneNumber(client: any) {
 
     // Save the assigned phone number to the .env file
     if (conversationNumber) {
-      await updateEnvFile('TWILIO_CONVERSATION_NUMBER', conversationNumber);
+      await updateEnvFile('TWILIO_PHONE_NUMBER', conversationNumber);
     }
     return {
       conversationNumber,
@@ -514,12 +514,12 @@ export async function createMessagingService(
   dotenv.config();
   const serviceName = process.env.SERVICE_NAME;
   const conversationNumber =
-    phoneNumber || process.env.TWILIO_CONVERSATION_NUMBER;
+    phoneNumber || process.env.TWILIO_PHONE_NUMBER;
 
   try {
     if (!serviceName || !conversationNumber) {
       throw new Error(
-        'SERVICE_NAME or TWILIO_CONVERSATION_NUMBER is not set in the environment variables.'
+        'SERVICE_NAME or TWILIO_PHONE_NUMBER is not set in the environment variables.'
       );
     }
     const messagingServiceName = \`\${serviceName} Messaging Service\`;

@@ -72,7 +72,7 @@ export const sendTextManifest: ToolManifest = {
     }
   }
 };`,
-      executor: `import { Twilio } from 'twilio';
+      executor: `import twilio from 'twilio';
  import { ToolResult, LocalTemplateData } from '../../lib/types';
  import { trackMessage } from '../../lib/utils/trackMessage';
 
@@ -110,7 +110,7 @@ export async function execute(
       throw new Error('Missing Twilio number in toolData. This should be set from the conversation context.');
     }
     
-    const client = new Twilio(twilioAccountSid, twilioAuthToken);
+    const client = new twilio.Twilio(twilioAccountSid, twilioAuthToken);
     
     const result = await client.messages.create({
       body: message,
