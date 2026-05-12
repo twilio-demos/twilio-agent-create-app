@@ -74,15 +74,15 @@ TWILIO_PHONE_NUMBER=
 # required: true for TAC
 TWILIO_API_KEY=
 
-# description: Twilio API Token (secret for the API Key above)
+# description: Twilio API Secret (secret for the API Key above)
 # format: hashed_value
 # required: true for TAC
-TWILIO_API_TOKEN=
+TWILIO_API_SECRET=
 
-# description: Twilio Conversation Configuration (Service) SID — the Maestro service TAC sends/receives through
-# format: ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# required: true for TAC
-CONVERSATION_SERVICE_ID=
+# description: Twilio Conversation Configuration ID — required by TAC for Maestro/SMS support
+# format: conv_configuration_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# required: true for SMS/chat channels (voice-only mode if omitted)
+TWILIO_CONVERSATION_CONFIGURATION_ID=
 
 # description: The messaging service to orchestrate RCS
 # format: +MGxxxxxxxxxxxxxx

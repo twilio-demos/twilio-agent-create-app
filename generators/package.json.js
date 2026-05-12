@@ -17,8 +17,7 @@ async function generatePackageJson(projectPath, config) {
       "twilio:init": "tsx scripts/twilioInit/index.ts"
     },
     dependencies: {
-      // TAC is not yet on npm — replace with "twilio-agent-connect": "^x.x.x" when published
-      "twilio-agent-connect": "file:../../twilio-agent-connect-typescript",
+      "twilio-agent-connect": "^1.0.2",
       "twilio": "^5.6.0",
       "@twilio/runtime-handler": "^2.1.0",
       "express": "^4.18.2",

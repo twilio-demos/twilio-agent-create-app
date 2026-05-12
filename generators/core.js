@@ -7,10 +7,7 @@ async function generateTacFile(projectPath) {
 
   const tacTemplate = `import { TAC, TACConfig, VoiceChannel, SMSChannel } from 'twilio-agent-connect';
 
-// Initialize TAC with config loaded from environment variables.
-// Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_API_KEY,
-// TWILIO_API_TOKEN, TWILIO_PHONE_NUMBER, CONVERSATION_SERVICE_ID
-export const tac = new TAC({ config: TACConfig.fromEnv() });
+export const tac = await TAC.create({ config: TACConfig.fromEnv() });
 
 export const voiceChannel = new VoiceChannel(tac);
 export const smsChannel = new SMSChannel(tac);
@@ -61,79 +58,45 @@ import liveNumbersRouter from './routes/liveNumbers.js';
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // ── LLM session management ──────────────────────────────────────────────────
-// One LLMService per active conversation, keyed by TAC conversationId.
+// Keyed by callSid initially, re-keyed to conversationId on first onMessageReady.
 const llmSessions = new Map<string, LLMService>();
 
-// Voice: TAC fires 'setup' when ConversationRelay WebSocket connects and
-// sends its first message. Create the LLMService here so it's ready before
-// the first 'prompt' arrives via tac.onMessageReady().
-voiceChannel.on('setup', async ({ conversationId, from, to, callSid }: {
-  conversationId: string;
-  from: string;
-  to: string;
-  callSid: string;
-  profileId?: string;
-  customParameters?: Record<string, unknown>;
-}) => {
-  const templateData = await getLocalTemplateData();
-  const llm = new LLMService(from, templateData);
-
-  // Stream text tokens directly through the TAC-managed WebSocket.
-  llm.on('text', (chunk: string, isFinal: boolean) => {
-    const ws = voiceChannel.getWebsocket(conversationId as any);
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'text', token: chunk, last: isFinal }));
-    }
-  });
-
-  llm.on('handoff', (data: Record<string, unknown>) => {
-    const ws = voiceChannel.getWebsocket(conversationId as any);
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'end', handoffData: JSON.stringify(data) }));
-    }
-  });
-
-  llm.on('language', (data: { ttsLanguage: string; transcriptionLanguage: string }) => {
-    const ws = voiceChannel.getWebsocket(conversationId as any);
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'language',
-        ttsLanguage: data.ttsLanguage,
-        transcriptionLanguage: data.transcriptionLanguage,
-      }));
-    }
-  });
-
-  // 'inbound' covers the standard case. TAC doesn't surface call direction in
-  // the setup callback yet — update when it does.
-  await llm.setCallContext(from, to, 'inbound', callSid);
-  await llm.notifyInitialCallParams();
-  await llm.run(); // initial greeting
-
-  llmSessions.set(conversationId, llm);
-});
-
-// All channels: fired every time a user message is ready.
+// onMessageReady: re-key from callSid → conversationId on first voice message.
 tac.onMessageReady(async ({ conversationId, message, author, channel }) => {
+  const convId = conversationId as string;
+
   if (channel === 'voice') {
-    const llm = llmSessions.get(conversationId as string);
+    let llm = llmSessions.get(convId);
+
     if (!llm) {
-      log.error({ label: 'tac', message: \`No LLM session for voice conversation \${conversationId}\` });
+      // Find session stored under callSid (starts with CA) and re-key it.
+      for (const [key, session] of llmSessions) {
+        if (key.startsWith('CA')) {
+          llm = session;
+          llmSessions.delete(key);
+          llmSessions.set(convId, llm);
+          break;
+        }
+      }
+    }
+
+    if (!llm) {
+      log.error({ label: 'tac', message: \`No LLM session for voice conversation \${convId}\` });
       return;
     }
+
+    log.info({ label: 'user', message });
     llm.addMessage({ role: 'user', content: message });
     await llm.run();
 
   } else if (channel === 'sms') {
-    let llm = llmSessions.get(conversationId as string);
+    let llm = llmSessions.get(convId);
 
     if (!llm) {
-      // First message in this SMS conversation — bootstrap the LLM session.
       const templateData = await getLocalTemplateData();
       llm = new LLMService(author, templateData);
       llm.isVoiceCall = false;
 
-      // For SMS, wait for the full response then send it as a single message.
       llm.on('text', async (_chunk: string, isFinal: boolean, fullText?: string) => {
         if (isFinal && fullText) {
           await smsChannel.sendResponse(conversationId as any, fullText).catch((err: Error) =>
@@ -143,7 +106,7 @@ tac.onMessageReady(async ({ conversationId, message, author, channel }) => {
       });
 
       await llm.notifyInitialCallParams();
-      llmSessions.set(conversationId as string, llm);
+      llmSessions.set(convId, llm);
     }
 
     llm.addMessage({ role: 'user', content: message });
@@ -177,9 +140,61 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use(express.urlencoded({ extended: true })).use(express.json());
 
-// TAC handles all WebSocket state — this route just hands the socket over.
 app.ws('/conversation-relay', (ws) => {
-  voiceChannel.handleWebSocketConnection(ws as unknown as WebSocket);
+  const rawWs = ws as unknown as WebSocket;
+
+  // Intercept the first message (always a ConversationRelay 'setup') so we can
+  // bootstrap the LLM and send the initial greeting immediately — before the
+  // caller speaks. ws is in closure so we can send directly without TAC.
+  rawWs.once('message', async (data: Buffer) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'setup') {
+        const { from, to, callSid } = msg;
+
+        const templateData = await getLocalTemplateData();
+        const llm = new LLMService(from, templateData);
+
+        llm.on('text', (chunk: string, isFinal: boolean, fullText?: string) => {
+          if (rawWs.readyState === WebSocket.OPEN) {
+            rawWs.send(JSON.stringify({ type: 'text', token: chunk, last: isFinal }));
+          }
+          if (isFinal && fullText) {
+            log.info({ label: 'agent', message: fullText });
+          }
+        });
+
+        llm.on('handoff', (handoffData: Record<string, unknown>) => {
+          if (rawWs.readyState === WebSocket.OPEN) {
+            rawWs.send(JSON.stringify({ type: 'end', handoffData: JSON.stringify(handoffData) }));
+          }
+        });
+
+        llm.on('language', (langData: { ttsLanguage: string; transcriptionLanguage: string }) => {
+          if (rawWs.readyState === WebSocket.OPEN) {
+            rawWs.send(JSON.stringify({
+              type: 'language',
+              ttsLanguage: langData.ttsLanguage,
+              transcriptionLanguage: langData.transcriptionLanguage,
+            }));
+          }
+        });
+
+        await llm.setCallContext(from, to, 'inbound', callSid);
+        await llm.notifyInitialCallParams();
+        llmSessions.set(callSid, llm);
+
+        await llm.run(); // initial greeting — ws is open, no need to wait for user speech
+      }
+    } catch (err) {
+      log.error({ label: 'ws', message: 'Error handling setup message', data: err });
+    }
+
+    // Hand to TAC for prompt/interrupt handling. Re-emit setup so TAC records
+    // the callSid it needs for conversation lookup on the first user prompt.
+    voiceChannel.handleWebSocketConnection(rawWs);
+    rawWs.emit('message', data);
+  });
 });
 
 // SMS: TAC's SMSChannel expects Maestro (Conversation Orchestrator) webhooks,
